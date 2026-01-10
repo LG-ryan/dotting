@@ -1,0 +1,17 @@
+# DOTTING CODEOWNERS
+# 
+# 중요 파일 변경 시 리뷰 필수
+# GitHub 설정에서 "Require review from Code Owners" 활성화 필요
+
+# 🛡️ 테스트 가드 - 가장 중요한 안전장치
+# 이 파일 변경은 반드시 승인 필요
+/dotting/tests/setup.ts @ryanj
+
+# 테스트 설정
+/dotting/vitest.config.ts @ryanj
+
+# CI 워크플로우
+/.github/workflows/ @ryanj
+
+# 데이터베이스 스키마
+/database/ @ryanj

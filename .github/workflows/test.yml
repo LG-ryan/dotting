@@ -1,0 +1,48 @@
+# DOTTING CI - 테스트 자동화
+# 
+# 목적: PR 머지 전 필수 테스트 게이트
+# 안전 정책:
+#   1. Supabase 키 주입 금지 (Unit 테스트는 키 없이 동작)
+#   2. tests/setup.ts 가드가 원격 DB 접근 차단
+#   3. 실패 시 PR 머지 불가
+
+name: Test
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./dotting
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './dotting/package-lock.json'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        run: npm run test
+        # ⚠️ 의도적으로 Supabase 환경변수 주입 안 함
+        # Unit 테스트는 DB 없이 동작해야 함
+        # tests/setup.ts 가드가 원격 접근 차단
+
+      - name: Lint check
+        run: npm run lint
+        continue-on-error: true  # lint는 경고만 (추후 강제 가능)

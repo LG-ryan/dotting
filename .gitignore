@@ -1,0 +1,22 @@
+# DOTTING 프로젝트 루트 .gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 환경변수 (절대 커밋 금지)
+.env
+.env.*
+!.env.example
+
+# 로컬 Supabase
+.supabase/
+
+# 로그
+*.log
