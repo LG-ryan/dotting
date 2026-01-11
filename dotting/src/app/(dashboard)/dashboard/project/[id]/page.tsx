@@ -690,24 +690,36 @@ export default function ProjectPage() {
   return (
     <div className="max-w-3xl mx-auto">
       {/* 헤더 */}
-      <div className="mb-6 flex justify-between items-start">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">
-            {session?.subject_name}님의 이야기
-          </h1>
-          <p className="text-slate-600 text-sm mt-1">
-            {session?.subject_relation} · {userAnswerCount}개의 답변
-          </p>
-        </div>
+      <div className="mb-6">
+        {/* 뒤로가기 버튼 */}
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          onClick={handleCreateShareLink}
-          disabled={shareLoading}
-          className="text-amber-700 border-amber-200 hover:bg-amber-50"
+          onClick={() => router.push('/dashboard')}
+          className="mb-4 text-[var(--dotting-muted-text)] hover:text-[var(--dotting-deep-navy)]"
         >
-          {shareLoading ? '생성 중...' : '링크 공유'}
+          ← 프로젝트 목록으로
         </Button>
+        
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">
+              {session?.subject_name}님의 이야기
+            </h1>
+            <p className="text-slate-600 text-sm mt-1">
+              {session?.subject_relation} · {userAnswerCount}개의 답변
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCreateShareLink}
+            disabled={shareLoading}
+            className="text-amber-700 border-amber-200 hover:bg-amber-50"
+          >
+            {shareLoading ? '생성 중...' : '링크 공유'}
+          </Button>
+        </div>
       </div>
       
       {/* 결제/주문 상태 카드 */}
@@ -743,6 +755,16 @@ export default function ProjectPage() {
       <Card className="h-[500px] flex flex-col">
         {/* 메시지 목록 */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* 질문 생성 중 표시 */}
+          {generating && messages.length === 0 && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-[var(--dotting-warm-gold)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-[var(--dotting-muted-text)]">첫 질문을 준비하고 있어요...</p>
+              </div>
+            </div>
+          )}
+          
           {messages.map((message, index) => {
             const isLastUserMessage = message.role === 'user' && 
               message.id === messages.filter(m => m.role === 'user').slice(-1)[0]?.id
@@ -785,7 +807,7 @@ export default function ProjectPage() {
                       <div
                         className={`p-4 rounded-2xl ${
                           message.role === 'user'
-                            ? 'bg-[var(--dotting-deep-navy)] text-white rounded-br-md'
+                            ? 'bg-[var(--dotting-warm-gold)] text-[var(--dotting-deep-navy)] rounded-br-md font-medium'
                             : message.meta?.question_source === 'fallback'
                             ? 'bg-amber-50 text-[var(--dotting-deep-navy)] rounded-bl-md border border-amber-200'
                             : 'bg-[var(--dotting-soft-cream)] text-[var(--dotting-deep-navy)] rounded-bl-md border border-[var(--dotting-border)]'
