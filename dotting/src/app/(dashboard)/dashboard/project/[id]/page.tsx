@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createBrowserClient } from '@supabase/ssr'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -750,13 +751,18 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
     <div className="max-w-3xl mx-auto">
       {/* 헤더 */}
       <div className="mb-6">
-        {/* 뒤로가기 버튼 - 부드러운 텍스트 링크 스타일 */}
-        <button
-          onClick={() => router.push('/dashboard')}
-          className="mb-4 text-sm text-[#6B7280] hover:text-[#1E3A5F] transition-colors"
-        >
-          ← 프로젝트 목록으로
-        </button>
+        {/* 상단 네비게이션 */}
+        <div className="flex items-center justify-between mb-4">
+          <Link href="/" className="text-xl font-bold tracking-tight text-[var(--dotting-deep-navy)]">
+            DOTTING
+          </Link>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="text-sm text-[#6B7280] hover:text-[#1E3A5F] transition-colors"
+          >
+            ← 프로젝트 목록
+          </button>
+        </div>
         
         <div className="flex justify-between items-start">
           <div>
