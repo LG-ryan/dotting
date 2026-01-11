@@ -6,6 +6,8 @@ import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { PaymentModal } from '@/components/payment/PaymentModal'
+import type { OrderPaymentStatus } from '@/types/database'
 
 interface Chapter {
   id: string
@@ -37,6 +39,11 @@ export default function PreviewPage() {
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [currentChapter, setCurrentChapter] = useState(0)
   const [loading, setLoading] = useState(true)
+  
+  // 결제 관련 상태
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [orderStatus, setOrderStatus] = useState<OrderPaymentStatus | null>(null)
+  const [isPaidSession, setIsPaidSession] = useState(false)
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -59,6 +66,22 @@ export default function PreviewPage() {
 
     if (sessionData) {
       setSession(sessionData)
+    }
+
+    // 주문 상태 로드
+    const { data: orderData } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('session_id', sessionId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    
+    if (orderData) {
+      setOrderStatus(orderData.status as OrderPaymentStatus)
+      const paidStatuses = ['paid', 'in_production', 'ready_to_ship', 'shipped', 'delivered', 'completed']
+      setIsPaidSession(paidStatuses.includes(orderData.status))
     }
 
     // 최신 draft 로드
@@ -248,6 +271,71 @@ export default function PreviewPage() {
           </Button>
         </div>
       </Card>
+
+      {/* 결제 CTA (미결제 상태에서만) */}
+      {!isPaidSession && (
+        <Card className="mt-6 p-6 bg-gradient-to-r from-[var(--dotting-soft-cream)] to-amber-50 border-[var(--dotting-warm-gold)]">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-center md:text-left">
+              <h3 className="text-lg font-bold text-[var(--dotting-deep-navy)] mb-1">
+                📖 이야기를 책으로 완성해보세요
+              </h3>
+              <p className="text-sm text-[var(--dotting-muted-text)]">
+                결제 후 PDF 다운로드, 실물 책 인쇄까지 가능해요
+              </p>
+            </div>
+            <Button
+              onClick={() => setShowPaymentModal(true)}
+              className="bg-[var(--dotting-deep-navy)] hover:bg-[#2A4A6F] text-white font-medium px-8 py-3 text-base"
+            >
+              결제하고 완성하기
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* 결제 완료 상태 */}
+      {isPaidSession && (
+        <Card className="mt-6 p-6 bg-green-50 border-green-200">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-center md:text-left">
+              <h3 className="text-lg font-bold text-green-800 mb-1">
+                ✅ 결제가 완료되었어요
+              </h3>
+              <p className="text-sm text-green-700">
+                이제 PDF 다운로드와 실물 책 인쇄가 가능해요
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="border-green-600 text-green-700 hover:bg-green-100"
+              >
+                PDF 다운로드
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                실물 책 주문
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* 결제 모달 */}
+      {session && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          sessionId={sessionId}
+          subjectName={session.subject_name}
+          onPaymentRequested={() => {
+            setShowPaymentModal(false)
+            loadPreview() // 상태 새로고침
+          }}
+        />
+      )}
     </div>
   )
 }

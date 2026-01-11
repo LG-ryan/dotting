@@ -12,10 +12,39 @@ import {
 } from '@/lib/interview-os'
 import { logQuestionGenerated, logFallbackQuestionUsed } from '@/lib/analytics'
 import { requirePayment } from '@/lib/payment-gate'
+import { FREE_QUESTIONS_LIMIT, LIMIT_MESSAGES } from '@/lib/free-tier-limits'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
+
+// 세션의 AI 질문 수 조회
+async function getQuestionCount(sessionId: string): Promise<number> {
+  const supabase = await createClient()
+  const { count } = await supabase
+    .from('messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', sessionId)
+    .eq('role', 'ai')
+    .is('deleted_at', null)
+  
+  return count || 0
+}
+
+// 결제 완료된 세션인지 확인
+async function isPaidSession(sessionId: string): Promise<boolean> {
+  const supabase = await createClient()
+  const { data: order } = await supabase
+    .from('orders')
+    .select('status')
+    .eq('session_id', sessionId)
+    .eq('is_active', true)
+    .in('status', ['paid', 'in_production', 'ready_to_ship', 'shipped', 'delivered', 'completed'])
+    .limit(1)
+    .single()
+  
+  return !!order
+}
 
 interface Message {
   role: 'ai' | 'user'
@@ -56,7 +85,23 @@ export async function POST(request: NextRequest) {
     const body: QuestionRequest = await request.json()
     const { sessionId, subjectName, subjectRelation, messages, isFirst } = body
     
-    // 결제 게이트: paid 상태가 아니면 LLM 호출 차단
+    // 1. 무료 질문 제한 체크 (결제 안 한 세션만)
+    const isPaid = await isPaidSession(sessionId)
+    if (!isPaid) {
+      const questionCount = await getQuestionCount(sessionId)
+      if (questionCount >= FREE_QUESTIONS_LIMIT) {
+        return NextResponse.json({
+          error: 'FREE_LIMIT_EXCEEDED',
+          message: LIMIT_MESSAGES.questions.description,
+          title: LIMIT_MESSAGES.questions.title,
+          cta: LIMIT_MESSAGES.questions.cta,
+          current_count: questionCount,
+          limit: FREE_QUESTIONS_LIMIT,
+        }, { status: 402 }) // 402 Payment Required
+      }
+    }
+    
+    // 2. 결제 게이트: paid 상태가 아니면 LLM 호출 차단 (기존 로직 - 로컬에서는 우회됨)
     const paymentGate = await requirePayment(sessionId)
     if (!paymentGate.allowed) {
       return paymentGate.response

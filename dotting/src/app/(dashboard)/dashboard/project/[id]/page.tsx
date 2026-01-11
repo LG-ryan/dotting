@@ -10,6 +10,7 @@ import { StoryPreviewModal } from '@/components/story-preview-modal'
 import { OrderStatusCard } from '@/components/payment/OrderStatusBadge'
 import { PaymentModal } from '@/components/payment/PaymentModal'
 import type { OrderPaymentStatus } from '@/types/database'
+import { FREE_QUESTIONS_LIMIT, LIMIT_MESSAGES } from '@/lib/free-tier-limits'
 
 interface MessageMeta {
   question_source?: 'llm' | 'fallback'
@@ -93,6 +94,11 @@ export default function ProjectPage() {
   const [orderStatus, setOrderStatus] = useState<OrderPaymentStatus | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   
+  // 무료 티어 제한 상태
+  const [freeQuestionsUsed, setFreeQuestionsUsed] = useState(0)
+  const [freeLimitReached, setFreeLimitReached] = useState(false)
+  const [isPaidSession, setIsPaidSession] = useState(false)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const supabase = createBrowserClient(
@@ -170,6 +176,9 @@ export default function ProjectPage() {
     
     if (orderData) {
       setOrderStatus(orderData.status as OrderPaymentStatus)
+      // 결제 완료 상태 확인
+      const paidStatuses = ['paid', 'in_production', 'ready_to_ship', 'shipped', 'delivered', 'completed']
+      setIsPaidSession(paidStatuses.includes(orderData.status))
     }
 
     // 메시지 로드
@@ -182,6 +191,11 @@ export default function ProjectPage() {
 
     if (messagesData) {
       setMessages(messagesData)
+      
+      // AI 질문 수 계산 (무료 제한 체크용)
+      const aiMessageCount = messagesData.filter(m => m.role === 'ai').length
+      setFreeQuestionsUsed(aiMessageCount)
+      setFreeLimitReached(aiMessageCount >= FREE_QUESTIONS_LIMIT)
     }
 
     // 메시지가 없으면 첫 질문 생성
@@ -339,6 +353,14 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
       })
 
       const data = await response.json()
+
+      // 무료 제한 초과 처리
+      if (response.status === 402 && data.error === 'FREE_LIMIT_EXCEEDED') {
+        setFreeLimitReached(true)
+        setFreeQuestionsUsed(data.current_count)
+        setGenerating(false)
+        return
+      }
 
       if (data.question) {
         // meta 정보 구성
@@ -779,6 +801,50 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
         />
       )}
 
+      {/* 무료 질문 잔여 횟수 표시 (결제 전에만) */}
+      {!isPaidSession && !freeLimitReached && (
+        <div className="mb-4 flex items-center justify-between text-sm">
+          <span className="text-[var(--dotting-muted-text)]">
+            💬 질문 {freeQuestionsUsed}/{FREE_QUESTIONS_LIMIT}개 사용
+          </span>
+          {freeQuestionsUsed >= FREE_QUESTIONS_LIMIT - 3 && (
+            <span className="text-amber-600 text-xs">
+              곧 무료 질문이 끝나요
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* 무료 제한 초과 안내 */}
+      {freeLimitReached && !isPaidSession && (
+        <Card className="mb-4 p-6 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+          <div className="text-center">
+            <div className="text-3xl mb-2">📖</div>
+            <h3 className="text-lg font-bold text-[var(--dotting-deep-navy)] mb-2">
+              {LIMIT_MESSAGES.questions.title}
+            </h3>
+            <p className="text-[var(--dotting-muted-text)] mb-4">
+              {LIMIT_MESSAGES.questions.description}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button
+                variant="outline"
+                onClick={() => setShowPreviewModal(true)}
+                className="text-sm"
+              >
+                미리보기
+              </Button>
+              <Button
+                onClick={() => setShowPaymentModal(true)}
+                className="bg-[var(--dotting-deep-navy)] hover:bg-[#2A4A6F] text-white"
+              >
+                {LIMIT_MESSAGES.questions.cta}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* 채팅 영역 */}
       <Card className="h-[500px] flex flex-col">
         {/* 메시지 목록 */}
@@ -927,26 +993,43 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
 
         {/* 입력 영역 */}
         <div className="border-t border-[var(--dotting-border)] p-4">
-          <div className="flex space-x-3">
-            <Textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="답변을 입력하세요..."
-              className="flex-1 min-h-[60px] max-h-[120px] resize-none"
-              disabled={sending || generating}
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!inputText.trim() || sending || generating}
-              className="h-[60px] px-6"
-            >
-              전송
-            </Button>
-          </div>
-          <p className="text-xs text-[var(--dotting-muted-text)] mt-2">
-            Enter로 전송, Shift+Enter로 줄바꿈
-          </p>
+          {freeLimitReached && !isPaidSession ? (
+            // 무료 제한 초과 시 입력 비활성화
+            <div className="text-center py-4">
+              <p className="text-[var(--dotting-muted-text)] text-sm mb-3">
+                무료 질문을 모두 사용했어요. 결제 후 계속 진행할 수 있어요.
+              </p>
+              <Button
+                onClick={() => setShowPaymentModal(true)}
+                className="bg-[var(--dotting-deep-navy)] hover:bg-[#2A4A6F]"
+              >
+                결제하고 계속하기
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex space-x-3">
+                <Textarea
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="답변을 입력하세요..."
+                  className="flex-1 min-h-[60px] max-h-[120px] resize-none"
+                  disabled={sending || generating}
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!inputText.trim() || sending || generating}
+                  className="h-[60px] px-6"
+                >
+                  전송
+                </Button>
+              </div>
+              <p className="text-xs text-[var(--dotting-muted-text)] mt-2">
+                Enter로 전송, Shift+Enter로 줄바꿈
+              </p>
+            </>
+          )}
         </div>
       </Card>
 

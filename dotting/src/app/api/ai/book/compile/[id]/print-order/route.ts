@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requirePayment } from '@/lib/payment-gate'
 
 interface CreatePrintOrderRequest {
   recipient_name: string
@@ -49,6 +50,7 @@ export async function POST(
       .from('compilations')
       .select(`
         id,
+        session_id,
         status,
         review_status,
         pdf_snapshot_version,
@@ -69,6 +71,7 @@ export async function POST(
     // 타입 단언
     const compilationData = compilation as unknown as {
       id: string
+      session_id: string
       status: string
       review_status: string
       pdf_snapshot_version: number | null
@@ -83,6 +86,12 @@ export async function POST(
         { error: '이 컴파일에 대한 권한이 없습니다.' },
         { status: 403 }
       )
+    }
+    
+    // 결제 게이트: 인쇄 주문은 유료 기능
+    const paymentGate = await requirePayment(compilationData.session_id)
+    if (!paymentGate.allowed) {
+      return paymentGate.response
     }
     
     // approved_for_pdf 상태인지 확인
