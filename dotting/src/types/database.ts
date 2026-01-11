@@ -1,5 +1,5 @@
 // Supabase Database Types
-// Version: 1.1 (Security & Soft Delete Fix)
+// Version: 1.6 (Orders & Payments)
 // 스키마 기반 자동 생성 권장: npx supabase gen types typescript
 
 export type Json =
@@ -51,6 +51,44 @@ export type ReviewStatus =
 
 export type ChangedByType = 'user' | 'system' | 'admin'
 
+// User Role Types (v1.5)
+export type UserRole = 'user' | 'admin' | 'operator'
+
+// Print Order Status Types (v1.5)
+export type PrintOrderStatus = 
+  | 'pending'        // 인쇄 대기 (approved_for_print 직후)
+  | 'printing'       // 인쇄 진행 중
+  | 'shipped'        // 발송 완료
+  | 'delivered'      // 배송 완료
+  | 'claim_opened'   // 클레임 접수
+  | 'claim_resolved' // 클레임 해결
+
+// Order & Payment Types (v1.6)
+export type PackageType = 'pdf_only' | 'standard' | 'premium'
+
+export type OrderStatus =
+  | 'pending_payment'  // 결제 대기
+  | 'paid'             // 결제 완료 (LLM 비용 발생 허용)
+  | 'in_production'    // 제작 중 (인터뷰→컴파일→PDF)
+  | 'ready_to_ship'    // 인쇄 완료, 배송 대기
+  | 'shipped'          // 배송 중
+  | 'delivered'        // 배송 완료
+  | 'completed'        // 완료
+  | 'refunded'         // 환불 완료
+  | 'cancelled'        // 취소됨
+  | 'expired'          // 결제 기한 만료
+
+export type PaymentMethod = 'manual' | 'toss' | 'kakao' | 'card'
+
+export type ClaimStatus = 'opened' | 'in_review' | 'resolved' | 'rejected'
+
+export type ClaimType = 
+  | 'print_defect'     // 인쇄 불량
+  | 'shipping_damage'  // 배송 파손
+  | 'wrong_delivery'   // 오배송
+  | 'content_error'    // 내용 오류
+  | 'other'            // 기타
+
 export interface Database {
   public: {
     Tables: {
@@ -59,6 +97,7 @@ export interface Database {
           id: string
           email: string
           name: string | null
+          role: UserRole
           created_at: string
           updated_at: string
         }
@@ -66,6 +105,7 @@ export interface Database {
           id?: string
           email: string
           name?: string | null
+          role?: UserRole
           created_at?: string
           updated_at?: string
         }
@@ -73,8 +113,279 @@ export interface Database {
           id?: string
           email?: string
           name?: string | null
+          role?: UserRole
           created_at?: string
           updated_at?: string
+        }
+      }
+      print_orders: {
+        Row: {
+          id: string
+          compilation_id: string
+          status: PrintOrderStatus
+          // 배송 정보
+          recipient_name: string
+          recipient_phone: string
+          shipping_address: string
+          shipping_address_detail: string | null
+          postal_code: string
+          // 송장 정보
+          tracking_carrier: string | null
+          tracking_number: string | null
+          // 클레임 정보
+          claim_reason: string | null
+          claim_resolution: string | null
+          // 관리 정보
+          admin_note: string | null
+          processed_by: string | null
+          // 타임스탬프
+          created_at: string
+          updated_at: string
+          shipped_at: string | null
+          delivered_at: string | null
+          claim_opened_at: string | null
+          claim_resolved_at: string | null
+        }
+        Insert: {
+          id?: string
+          compilation_id: string
+          status?: PrintOrderStatus
+          recipient_name: string
+          recipient_phone: string
+          shipping_address: string
+          shipping_address_detail?: string | null
+          postal_code: string
+          tracking_carrier?: string | null
+          tracking_number?: string | null
+          claim_reason?: string | null
+          claim_resolution?: string | null
+          admin_note?: string | null
+          processed_by?: string | null
+          created_at?: string
+          updated_at?: string
+          shipped_at?: string | null
+          delivered_at?: string | null
+          claim_opened_at?: string | null
+          claim_resolved_at?: string | null
+        }
+        Update: {
+          id?: string
+          compilation_id?: string
+          status?: PrintOrderStatus
+          recipient_name?: string
+          recipient_phone?: string
+          shipping_address?: string
+          shipping_address_detail?: string | null
+          postal_code?: string
+          tracking_carrier?: string | null
+          tracking_number?: string | null
+          claim_reason?: string | null
+          claim_resolution?: string | null
+          admin_note?: string | null
+          processed_by?: string | null
+          created_at?: string
+          updated_at?: string
+          shipped_at?: string | null
+          delivered_at?: string | null
+          claim_opened_at?: string | null
+          claim_resolved_at?: string | null
+        }
+      }
+      orders: {
+        Row: {
+          id: string
+          user_id: string
+          session_id: string  // session = project in DOTTING
+          package: PackageType
+          amount: number
+          status: OrderStatus
+          payment_method: PaymentMethod | null
+          payment_note: string | null
+          payment_requested_at: string | null
+          paid_at: string | null
+          progress: Json
+          recipient_name: string | null
+          shipping_address: string | null
+          shipping_phone: string | null
+          tracking_carrier: string | null
+          tracking_number: string | null
+          shipped_at: string | null
+          delivered_at: string | null
+          completed_at: string | null
+          cancelled_at: string | null
+          cancel_reason: string | null
+          refunded_at: string | null
+          refund_amount: number | null
+          refund_reason: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          session_id: string
+          package: PackageType
+          amount: number
+          status?: OrderStatus
+          payment_method?: PaymentMethod | null
+          payment_note?: string | null
+          payment_requested_at?: string | null
+          paid_at?: string | null
+          progress?: Json
+          recipient_name?: string | null
+          shipping_address?: string | null
+          shipping_phone?: string | null
+          tracking_carrier?: string | null
+          tracking_number?: string | null
+          shipped_at?: string | null
+          delivered_at?: string | null
+          completed_at?: string | null
+          cancelled_at?: string | null
+          cancel_reason?: string | null
+          refunded_at?: string | null
+          refund_amount?: number | null
+          refund_reason?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          session_id?: string
+          package?: PackageType
+          amount?: number
+          status?: OrderStatus
+          payment_method?: PaymentMethod | null
+          payment_note?: string | null
+          payment_requested_at?: string | null
+          paid_at?: string | null
+          progress?: Json
+          recipient_name?: string | null
+          shipping_address?: string | null
+          shipping_phone?: string | null
+          tracking_carrier?: string | null
+          tracking_number?: string | null
+          shipped_at?: string | null
+          delivered_at?: string | null
+          completed_at?: string | null
+          cancelled_at?: string | null
+          cancel_reason?: string | null
+          refunded_at?: string | null
+          refund_amount?: number | null
+          refund_reason?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      order_status_logs: {
+        Row: {
+          id: string
+          order_id: string
+          from_status: OrderStatus | null
+          to_status: OrderStatus
+          changed_by: string | null
+          reason: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          from_status?: OrderStatus | null
+          to_status: OrderStatus
+          changed_by?: string | null
+          reason?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          from_status?: OrderStatus | null
+          to_status?: OrderStatus
+          changed_by?: string | null
+          reason?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+      }
+      claims: {
+        Row: {
+          id: string
+          order_id: string
+          type: ClaimType
+          status: ClaimStatus
+          description: string
+          attachments: Json
+          resolution: string | null
+          resolved_by: string | null
+          resolved_at: string | null
+          compensation_type: string | null
+          compensation_amount: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          type: ClaimType
+          status?: ClaimStatus
+          description: string
+          attachments?: Json
+          resolution?: string | null
+          resolved_by?: string | null
+          resolved_at?: string | null
+          compensation_type?: string | null
+          compensation_amount?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          type?: ClaimType
+          status?: ClaimStatus
+          description?: string
+          attachments?: Json
+          resolution?: string | null
+          resolved_by?: string | null
+          resolved_at?: string | null
+          compensation_type?: string | null
+          compensation_amount?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      claim_logs: {
+        Row: {
+          id: string
+          claim_id: string
+          from_status: ClaimStatus | null
+          to_status: ClaimStatus
+          changed_by: string | null
+          note: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          claim_id: string
+          from_status?: ClaimStatus | null
+          to_status: ClaimStatus
+          changed_by?: string | null
+          note?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          claim_id?: string
+          from_status?: ClaimStatus | null
+          to_status?: ClaimStatus
+          changed_by?: string | null
+          note?: string | null
+          created_at?: string
         }
       }
       sessions: {
@@ -782,3 +1093,9 @@ export type ReviewStatusLog = Tables<'review_status_logs'>
 
 // PDF Snapshot 관련 타입 (v1.5)
 export type CompiledParagraphSnapshot = Tables<'compiled_paragraph_snapshots'>
+
+// Order & Payment 관련 타입 (v1.6)
+export type Order = Tables<'orders'>
+export type OrderStatusLog = Tables<'order_status_logs'>
+export type Claim = Tables<'claims'>
+export type ClaimLog = Tables<'claim_logs'>

@@ -68,9 +68,11 @@ export function StoryPreviewModal({
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-pulse">
-              <div className="w-16 h-16 bg-slate-200 rounded-full mx-auto mb-4" />
-              <p className="text-slate-600">이야기를 다듬고 있어요...</p>
-              <p className="text-sm text-slate-500 mt-2">잠시만 기다려주세요</p>
+              <div className="w-16 h-16 bg-[var(--dotting-warm-gold)]/30 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <span className="text-2xl">●●●</span>
+              </div>
+              <p className="text-[var(--dotting-deep-navy)]">이야기를 다듬고 있어요...</p>
+              <p className="text-sm text-[var(--dotting-muted-text)] mt-2">잠시만 기다려주세요</p>
             </div>
           </div>
         ) : chapter ? (
@@ -108,8 +110,8 @@ export function StoryPreviewModal({
             
             {/* 헤더 */}
             <div className="text-center mb-6">
-              <p className="text-sm text-slate-500 mb-1">미리보기</p>
-              <h2 className="text-xl font-bold text-slate-900">
+              <p className="text-sm text-[var(--dotting-muted-text)] mb-1">미리보기</p>
+              <h2 className="text-xl font-bold text-[var(--dotting-deep-navy)]">
                 이런 느낌으로 정리해드릴게요
               </h2>
             </div>
@@ -130,33 +132,33 @@ export function StoryPreviewModal({
             {/* 피드백 섹션 */}
             {showFeedback ? (
               <div className="space-y-4 mb-6">
-                <div className="border-t border-slate-200 pt-4">
-                  <h4 className="font-medium text-slate-900 mb-3">
+                <div className="border-t border-[var(--dotting-border)] pt-4">
+                  <h4 className="font-medium text-[var(--dotting-deep-navy)] mb-3">
                     이야기를 더 다듬어볼까요?
                   </h4>
-                  <p className="text-sm text-slate-600 mb-4">
+                  <p className="text-sm text-[var(--dotting-muted-text)] mb-4">
                     원하시는 방향을 선택해주세요. 선택하신 내용을 반영해서 다시 써드릴게요.
                   </p>
 
                   {/* 문체와 분위기 */}
                   <div className="mb-4">
-                    <p className="text-sm font-medium text-slate-700 mb-2">문체와 분위기</p>
+                    <p className="text-sm font-medium text-[var(--dotting-deep-navy)] mb-2">문체와 분위기</p>
                     <div className="space-y-2">
                       {[
                         { value: 'warm' as const, label: '좀 더 따뜻하고 포근하게' },
                         { value: 'calm' as const, label: '좀 더 담담하고 차분하게' },
                         { value: 'vivid' as const, label: '좀 더 생생하고 현장감 있게' },
                       ].map(option => (
-                        <label key={option.value} className="flex items-center">
+                        <label key={option.value} className="flex items-center cursor-pointer">
                           <input
                             type="radio"
                             name="tone"
                             value={option.value}
                             checked={selectedTone === option.value}
                             onChange={() => setSelectedTone(option.value)}
-                            className="mr-2"
+                            className="mr-2 accent-[var(--dotting-warm-gold)]"
                           />
-                          <span className="text-sm text-slate-700">{option.label}</span>
+                          <span className="text-sm text-[var(--dotting-deep-navy)]">{option.label}</span>
                         </label>
                       ))}
                     </div>
@@ -164,23 +166,23 @@ export function StoryPreviewModal({
 
                   {/* 강조하고 싶은 부분 */}
                   <div className="mb-4">
-                    <p className="text-sm font-medium text-slate-700 mb-2">강조하고 싶은 부분</p>
+                    <p className="text-sm font-medium text-[var(--dotting-deep-navy)] mb-2">강조하고 싶은 부분</p>
                     <div className="space-y-2">
                       {[
                         { value: 'family' as const, label: '가족 간의 사랑이 더 느껴지게' },
                         { value: 'scenery' as const, label: '그 시절의 풍경이 더 그려지게' },
                         { value: 'emotion' as const, label: '감정의 깊이가 더 느껴지게' },
                       ].map(option => (
-                        <label key={option.value} className="flex items-center">
+                        <label key={option.value} className="flex items-center cursor-pointer">
                           <input
                             type="radio"
                             name="emphasis"
                             value={option.value}
                             checked={selectedEmphasis === option.value}
                             onChange={() => setSelectedEmphasis(option.value)}
-                            className="mr-2"
+                            className="mr-2 accent-[var(--dotting-warm-gold)]"
                           />
-                          <span className="text-sm text-slate-700">{option.label}</span>
+                          <span className="text-sm text-[var(--dotting-deep-navy)]">{option.label}</span>
                         </label>
                       ))}
                     </div>
@@ -188,7 +190,7 @@ export function StoryPreviewModal({
 
                   {/* 구체적인 수정 요청 */}
                   <div className="mb-4">
-                    <p className="text-sm font-medium text-slate-700 mb-2">
+                    <p className="text-sm font-medium text-[var(--dotting-deep-navy)] mb-2">
                       구체적인 수정 요청 (선택)
                     </p>
                     <Textarea
@@ -200,7 +202,7 @@ export function StoryPreviewModal({
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-[var(--dotting-muted-text)]">
                       남은 기회: {remainingAttempts}회
                     </p>
                     <div className="space-x-2">
@@ -213,7 +215,7 @@ export function StoryPreviewModal({
                       <Button
                         onClick={handleRegenerate}
                         disabled={remainingAttempts <= 0}
-                        className="bg-slate-900 hover:bg-slate-800"
+                        variant="secondary"
                       >
                         다시 써주세요
                       </Button>
@@ -229,7 +231,7 @@ export function StoryPreviewModal({
               </div>
             ) : (
               <div className="mb-6">
-                <p className="text-center text-slate-600 text-sm">
+                <p className="text-center text-[var(--dotting-muted-text)] text-sm">
                   마음에 드시면 &apos;이대로 완성하기&apos;를 눌러주세요.
                   <br />
                   전체 이야기는 3개의 챕터로 구성됩니다.
@@ -244,12 +246,13 @@ export function StoryPreviewModal({
                   variant="outline"
                   onClick={() => setShowFeedback(true)}
                   disabled={remainingAttempts <= 0}
+                  className="min-w-[120px]"
                 >
                   다른 느낌으로
                 </Button>
                 <Button
                   onClick={handleConfirm}
-                  className="bg-slate-900 hover:bg-slate-800"
+                  className="min-w-[140px]"
                 >
                   이대로 완성하기
                 </Button>
@@ -259,7 +262,7 @@ export function StoryPreviewModal({
             {/* 닫기 버튼 */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+              className="absolute top-4 right-4 text-[var(--dotting-muted-text)] hover:text-[var(--dotting-deep-navy)] transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -268,7 +271,7 @@ export function StoryPreviewModal({
           </div>
         ) : (
           <div className="p-8 text-center">
-            <p className="text-slate-600">미리보기를 불러오는 중 오류가 발생했어요.</p>
+            <p className="text-[var(--dotting-muted-text)]">미리보기를 불러오는 중 오류가 발생했어요.</p>
             <Button onClick={onClose} className="mt-4">
               닫기
             </Button>

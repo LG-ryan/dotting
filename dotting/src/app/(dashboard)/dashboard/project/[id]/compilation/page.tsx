@@ -12,10 +12,26 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import CompilationViewer from '@/components/compilation/CompilationViewer'
 import CompilationEditor from '@/components/compilation/CompilationEditor'
-import PdfPreview from '@/components/compilation/PdfPreview'
 import type { ReviewStatus } from '@/types/database'
+
+// @react-pdf/renderer는 SSR에서 작동하지 않으므로 dynamic import 필수
+const PdfPreview = dynamic(
+  () => import('@/components/compilation/PdfPreview'),
+  { 
+    ssr: false, 
+    loading: () => (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-800 rounded-full mx-auto mb-4" />
+          <p className="text-gray-600">PDF 미리보기 로딩 중...</p>
+        </div>
+      </div>
+    )
+  }
+)
 
 type ViewMode = 'viewer' | 'editor' | 'pdf'
 

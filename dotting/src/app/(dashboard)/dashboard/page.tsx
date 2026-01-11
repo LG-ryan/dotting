@@ -3,8 +3,25 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { OrderStatusBadge } from '@/components/payment/OrderStatusBadge'
+import type { OrderPaymentStatus } from '@/types/database'
 
-async function getSessions() {
+interface SessionWithOrder {
+  id: string
+  subject_name: string
+  subject_relation: string
+  mode: string
+  status: string
+  created_at: string
+  activeOrder?: {
+    id: string
+    status: OrderPaymentStatus
+    package_type: string
+    amount: number
+  } | null
+}
+
+async function getSessions(): Promise<SessionWithOrder[]> {
   const cookieStore = await cookies()
   
   const supabase = createServerClient(
@@ -32,13 +49,56 @@ async function getSessions() {
   
   if (!user) return []
 
+  // 세션과 활성 주문 정보 함께 조회
   const { data: sessions } = await supabase
     .from('sessions')
-    .select('*')
+    .select(`
+      id,
+      subject_name,
+      subject_relation,
+      mode,
+      status,
+      created_at,
+      orders!orders_session_id_fkey (
+        id,
+        status,
+        package_type,
+        amount,
+        is_active
+      )
+    `)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
-  return sessions || []
+  if (!sessions) return []
+
+  // 활성 주문만 필터링해서 매핑
+  return sessions.map((session) => {
+    const orders = session.orders as Array<{
+      id: string
+      status: OrderPaymentStatus
+      package_type: string
+      amount: number
+      is_active: boolean
+    }> | null
+    
+    const activeOrder = orders?.find((o) => o.is_active) || null
+    
+    return {
+      id: session.id,
+      subject_name: session.subject_name,
+      subject_relation: session.subject_relation,
+      mode: session.mode,
+      status: session.status,
+      created_at: session.created_at,
+      activeOrder: activeOrder ? {
+        id: activeOrder.id,
+        status: activeOrder.status,
+        package_type: activeOrder.package_type,
+        amount: activeOrder.amount,
+      } : null,
+    }
+  })
 }
 
 export default async function DashboardPage() {
@@ -49,11 +109,11 @@ export default async function DashboardPage() {
       {/* Welcome Section */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">내 프로젝트</h1>
-          <p className="text-slate-600 mt-1">소중한 이야기를 기록하고 책으로 만들어보세요</p>
+          <h1 className="text-2xl font-bold text-foreground">내 프로젝트</h1>
+          <p className="text-muted-foreground mt-1">소중한 이야기를 기록하고 책으로 만들어보세요</p>
         </div>
         <Link href="/dashboard/new">
-          <Button className="bg-slate-900 hover:bg-slate-800">
+          <Button>
             새 프로젝트 시작
           </Button>
         </Link>
@@ -61,11 +121,11 @@ export default async function DashboardPage() {
 
       {/* Projects Grid */}
       {sessions.length === 0 ? (
-        <Card className="border-dashed border-2 border-slate-200">
+        <Card className="border-dashed border-2">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
               <svg 
-                className="w-8 h-8 text-slate-400" 
+                className="w-8 h-8 text-muted-foreground" 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -78,15 +138,15 @@ export default async function DashboardPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-slate-900 mb-2">
+            <h3 className="text-lg font-medium text-foreground mb-2">
               아직 프로젝트가 없습니다
             </h3>
-            <p className="text-slate-600 text-center mb-6 max-w-sm">
+            <p className="text-muted-foreground text-center mb-6 max-w-sm">
               첫 번째 프로젝트를 시작해서<br />
               소중한 분의 이야기를 기록해보세요
             </p>
             <Link href="/dashboard/new">
-              <Button className="bg-slate-900 hover:bg-slate-800">
+              <Button>
                 첫 프로젝트 시작하기
               </Button>
             </Link>
@@ -105,16 +165,21 @@ export default async function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex justify-between items-center">
-                    <span className={`text-sm px-2 py-1 rounded-full ${
-                      session.status === 'completed' 
-                        ? 'bg-green-100 text-green-700'
-                        : session.status === 'in_progress'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-slate-100 text-slate-700'
-                    }`}>
-                      {session.status === 'completed' ? '완료' : session.status === 'in_progress' ? '진행중' : '시작 전'}
-                    </span>
-                    <span className="text-sm text-slate-500">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm px-2 py-1 rounded-full ${
+                        session.status === 'completed' 
+                          ? 'bg-green-100 text-green-700'
+                          : session.status === 'in_progress'
+                          ? 'bg-primary/20 text-foreground'
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {session.status === 'completed' ? '완료' : session.status === 'in_progress' ? '진행중' : '시작 전'}
+                      </span>
+                      {session.activeOrder && (
+                        <OrderStatusBadge status={session.activeOrder.status} size="sm" />
+                      )}
+                    </div>
+                    <span className="text-sm text-muted-foreground">
                       {new Date(session.created_at).toLocaleDateString('ko-KR')}
                     </span>
                   </div>

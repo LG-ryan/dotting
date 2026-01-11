@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { requirePayment } from '@/lib/payment-gate'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -30,6 +31,12 @@ export async function POST(request: NextRequest) {
   try {
     const body: PreviewRequest = await request.json()
     const { sessionId, subjectName, subjectRelation, messages, feedback, styleOptions } = body
+    
+    // 결제 게이트: paid 상태가 아니면 LLM 호출 차단
+    const paymentGate = await requirePayment(sessionId)
+    if (!paymentGate.allowed) {
+      return paymentGate.response
+    }
 
     // 사용자 답변만 추출
     const userAnswers = messages.filter(m => m.role === 'user')

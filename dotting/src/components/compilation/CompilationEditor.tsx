@@ -337,7 +337,7 @@ export default function CompilationEditor({
               <button
                 onClick={handleSaveNow}
                 disabled={saveStatus === 'saving' || pendingChanges.size === 0}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 border-2 border-[var(--dotting-deep-navy)] text-[var(--dotting-deep-navy)] rounded-lg hover:bg-[var(--dotting-deep-navy)]/10 disabled:border-[#B0B8C0] disabled:text-[#B0B8C0] transition-colors"
               >
                 {saveStatus === 'saving' ? '저장 중...' : '저장'}
               </button>
@@ -345,7 +345,7 @@ export default function CompilationEditor({
               <button
                 onClick={handleCreatePdf}
                 disabled={saveStatus === 'saving' || pendingChanges.size > 0}
-                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black disabled:opacity-50"
+                className="px-4 py-2 bg-[var(--dotting-warm-gold)] text-[var(--dotting-deep-navy)] font-semibold rounded-lg hover:bg-[#C49660] disabled:bg-[#E8DFD3] disabled:text-[#A09080] transition-colors"
               >
                 PDF 만들기
               </button>
@@ -356,11 +356,11 @@ export default function CompilationEditor({
       
       {/* 잠금 경고 */}
       {isLocked && (
-        <div className="mx-6 mt-4 p-4 bg-gray-100 rounded-lg">
-          <p className="text-gray-600">
+        <div className="mx-6 mt-4 p-4 bg-[var(--dotting-soft-cream)] rounded-lg border border-[var(--dotting-border)]">
+          <p className="text-[var(--dotting-muted-text)]">
             인쇄가 확정되어 수정할 수 없어요.
             <br />
-            문의가 필요하시면 <a href="mailto:support@dotting.com" className="underline">고객센터</a>로 연락해주세요.
+            문의가 필요하시면 <a href="mailto:support@dotting.com" className="underline text-[var(--dotting-warm-brown)]">고객센터</a>로 연락해주세요.
           </p>
         </div>
       )}
@@ -401,27 +401,27 @@ export default function CompilationEditor({
                   key={para.id}
                   className={`relative rounded-lg border ${
                     para.is_hidden 
-                      ? 'bg-gray-50 border-gray-200' 
+                      ? 'bg-[var(--dotting-soft-cream)] border-[var(--dotting-border)] opacity-60' 
                       : para.isModified 
-                        ? 'bg-blue-50 border-blue-200' 
-                        : 'bg-white border-gray-200'
+                        ? 'bg-blue-50 border-blue-300' 
+                        : 'bg-white border-[var(--dotting-border)]'
                   }`}
                 >
                   {/* 문단 헤더 */}
-                  <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50 rounded-t-lg">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--dotting-border)] bg-[var(--dotting-soft-cream)] rounded-t-lg">
+                    <div className="flex items-center gap-2 text-sm text-[var(--dotting-muted-text)]">
                       {para.isModified && (
-                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
                           수정됨
                         </span>
                       )}
                       {para.is_hidden && (
-                        <span className="px-2 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">
+                        <span className="px-2 py-0.5 bg-[var(--dotting-border)] text-[var(--dotting-muted-text)] rounded text-xs">
                           숨김
                         </span>
                       )}
                       {['editorial', 'intro', 'outro'].includes(para.paragraph_type) && (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-[var(--dotting-muted-text)]">
                           {para.paragraph_type === 'intro' && '시작 문장'}
                           {para.paragraph_type === 'outro' && '마무리 문장'}
                           {para.paragraph_type === 'editorial' && '정리 문장'}

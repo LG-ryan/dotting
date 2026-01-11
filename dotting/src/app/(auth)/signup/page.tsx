@@ -77,10 +77,10 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <Card className="border-0 shadow-xl">
+      <Card className="border-0 shadow-xl bg-white">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight">이메일을 확인하세요</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-bold tracking-tight text-[var(--dotting-deep-navy)]">이메일을 확인하세요</CardTitle>
+          <CardDescription className="text-[var(--dotting-muted-text)]">
             {email}로 인증 메일을 보냈습니다.
             <br />
             메일의 링크를 클릭하여 가입을 완료해주세요.
@@ -88,7 +88,7 @@ export default function SignupPage() {
         </CardHeader>
         <CardFooter>
           <Link href="/login" className="w-full">
-            <Button variant="outline" className="w-full h-11">
+            <Button variant="outline" className="w-full h-11 border-[var(--dotting-warm-gold)] text-[var(--dotting-deep-navy)] hover:bg-[var(--dotting-warm-gold)]/10">
               로그인 페이지로 돌아가기
             </Button>
           </Link>
@@ -98,11 +98,11 @@ export default function SignupPage() {
   }
 
   return (
-    <Card className="border-0 shadow-xl">
+    <Card className="border-0 shadow-xl bg-white">
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold tracking-tight">DOTTING</CardTitle>
-        <CardDescription>
-          새 계정을 만들어 시작하세요
+        <CardTitle className="text-2xl font-bold tracking-tight text-[var(--dotting-deep-navy)]">DOTTING</CardTitle>
+        <CardDescription className="text-[var(--dotting-muted-text)]">
+          지금 시작하세요. 첫 번째 이야기가 기다립니다.
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSignup}>
@@ -113,7 +113,7 @@ export default function SignupPage() {
             </div>
           )}
           <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium text-slate-700">
+            <label htmlFor="name" className="text-sm font-medium text-[var(--dotting-deep-navy)]">
               이름
             </label>
             <Input
@@ -123,11 +123,11 @@ export default function SignupPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="h-11"
+              className="h-11 border-[var(--dotting-border)] focus:border-[var(--dotting-warm-gold)] focus:ring-[var(--dotting-warm-gold)]"
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-slate-700">
+            <label htmlFor="email" className="text-sm font-medium text-[var(--dotting-deep-navy)]">
               이메일
             </label>
             <Input
@@ -137,11 +137,11 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-11"
+              className="h-11 border-[var(--dotting-border)] focus:border-[var(--dotting-warm-gold)] focus:ring-[var(--dotting-warm-gold)]"
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium text-slate-700">
+            <label htmlFor="password" className="text-sm font-medium text-[var(--dotting-deep-navy)]">
               비밀번호
             </label>
             <Input
@@ -151,11 +151,11 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="h-11"
+              className="h-11 border-[var(--dotting-border)] focus:border-[var(--dotting-warm-gold)] focus:ring-[var(--dotting-warm-gold)]"
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
+            <label htmlFor="confirmPassword" className="text-sm font-medium text-[var(--dotting-deep-navy)]">
               비밀번호 확인
             </label>
             <Input
@@ -165,21 +165,25 @@ export default function SignupPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className="h-11"
+              className="h-11 border-[var(--dotting-border)] focus:border-[var(--dotting-warm-gold)] focus:ring-[var(--dotting-warm-gold)]"
             />
           </div>
+          {/* 안심 문구 */}
+          <p className="text-xs text-center text-[var(--dotting-muted-text)]">
+            링크로 보내기 전까지는 아무도 볼 수 없어요
+          </p>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <Button 
             type="submit" 
-            className="w-full h-11 bg-slate-900 hover:bg-slate-800"
+            className="w-full h-11 bg-[var(--dotting-warm-gold)] hover:bg-[#C49660] text-[var(--dotting-deep-navy)] font-semibold"
             disabled={loading}
           >
             {loading ? '가입 중...' : '회원가입'}
           </Button>
-          <p className="text-sm text-center text-slate-600">
+          <p className="text-sm text-center text-[var(--dotting-muted-text)]">
             이미 계정이 있으신가요?{' '}
-            <Link href="/login" className="font-medium text-slate-900 hover:underline">
+            <Link href="/login" className="font-medium text-[var(--dotting-deep-navy)] hover:underline">
               로그인
             </Link>
           </p>

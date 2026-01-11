@@ -53,6 +53,10 @@ export default function RespondPage() {
   const [failedMessage, setFailedMessage] = useState<string | null>(null)
   const [errorType, setErrorType] = useState<'network' | 'server' | null>(null)
   
+  // 결제 대기 상태 (paid 전)
+  const [paymentRequired, setPaymentRequired] = useState(false)
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -149,6 +153,17 @@ export default function RespondPage() {
           isFirst: true,
         }),
       })
+
+      // 결제 대기 상태 처리
+      if (response.status === 403) {
+        const errorData = await response.json()
+        if (errorData.error === 'PAYMENT_REQUIRED') {
+          setPaymentRequired(true)
+          setPaymentStatus(errorData.status)
+          setGenerating(false)
+          return
+        }
+      }
 
       const data = await response.json()
 
@@ -315,6 +330,17 @@ export default function RespondPage() {
         }),
       })
 
+      // 결제 대기 상태 처리
+      if (response.status === 403) {
+        const errorData = await response.json()
+        if (errorData.error === 'PAYMENT_REQUIRED') {
+          setPaymentRequired(true)
+          setPaymentStatus(errorData.status)
+          setGenerating(false)
+          return
+        }
+      }
+
       const data = await response.json()
 
       if (data.question) {
@@ -431,6 +457,62 @@ export default function RespondPage() {
           <p className="text-stone-500">
             링크를 보내주신 분께 문의해주세요.
           </p>
+        </div>
+      </div>
+    )
+  }
+  
+  // 결제 대기 상태 (paid 전)
+  if (paymentRequired) {
+    const statusMessages: Record<string, { title: string; message: string; icon: string }> = {
+      pending_payment: {
+        title: '인터뷰 준비 중이에요',
+        message: '자녀분이 결제를 완료하면 인터뷰를 시작할 수 있어요. 조금만 기다려주세요!',
+        icon: '⏳',
+      },
+      pending_manual: {
+        title: '결제 확인 중이에요',
+        message: '자녀분이 결제하셨고, 확인 중이에요. 잠시 후 다시 시도해주세요.',
+        icon: '🔍',
+      },
+      expired: {
+        title: '링크가 만료되었어요',
+        message: '이 링크는 더 이상 사용할 수 없어요. 자녀분께 새 링크를 요청해주세요.',
+        icon: '⏰',
+      },
+    }
+    
+    const status = statusMessages[paymentStatus || 'pending_payment'] || statusMessages.pending_payment
+    
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+        <div className={`max-w-lg w-full bg-white ${s.card} shadow-sm ${s.spacing} text-center`}>
+          <div className="text-5xl mb-4">{status.icon}</div>
+          <h1 className={`${s.headerTitle} text-stone-900 mb-3`}>
+            {status.title}
+          </h1>
+          {sessionInfo && (
+            <p className={`${s.bodyText} text-stone-500 mb-4`}>
+              {sessionInfo.subject_name}님의 이야기
+            </p>
+          )}
+          <p className={`${s.bodyText} text-stone-600 mb-6`}>
+            {status.message}
+          </p>
+          
+          <div className="border-t border-stone-100 pt-6">
+            <p className="text-stone-500 text-sm mb-3">자녀분께 알려주세요</p>
+            <button
+              onClick={() => {
+                const text = `안녕, 인터뷰 링크 열어봤는데 아직 결제가 안 됐나 봐. 확인해줄 수 있어?`
+                navigator.clipboard.writeText(text)
+                alert('문구가 복사되었어요!')
+              }}
+              className={`w-full ${s.button} bg-stone-100 text-stone-700 hover:bg-stone-200 transition-colors`}
+            >
+              📋 문구 복사하기
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -601,19 +683,27 @@ export default function RespondPage() {
             
             {/* 버튼 + 안내문 */}
             <div className="mt-4">
-              <p className="text-stone-400 text-sm mb-3 text-center">
+              <p className="text-[var(--dotting-muted-text)] text-sm mb-3 text-center">
                 천천히 생각하시고 편하게 답변해주세요
               </p>
               <button
                 onClick={handleTrySend}
                 disabled={!inputText.trim() || sending || generating}
-                className={`w-full ${s.buttonHeight} ${s.buttonText} font-medium ${s.card} transition-all
-                           ${sending 
-                             ? 'bg-stone-400 text-white cursor-wait'
-                             : inputText.trim() 
-                               ? 'bg-stone-800 text-white hover:bg-stone-900' 
-                               : 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                           }`}
+                className={`w-full ${s.buttonHeight} ${s.buttonText} font-semibold ${s.card} transition-all border-2`}
+                style={{
+                  backgroundColor: sending 
+                    ? '#C49660' 
+                    : inputText.trim() 
+                      ? '#D4A574' 
+                      : '#F5EDE3',
+                  borderColor: sending 
+                    ? '#8B6F47' 
+                    : inputText.trim() 
+                      ? '#C49660' 
+                      : '#D4C4B0',
+                  color: inputText.trim() || sending ? '#1E3A5F' : '#8B7355',
+                  cursor: sending ? 'wait' : inputText.trim() ? 'pointer' : 'not-allowed'
+                }}
               >
                 {sending ? '전송 중...' : failedMessage ? '다시 시도' : '보내기'}
               </button>

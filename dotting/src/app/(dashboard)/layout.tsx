@@ -1,8 +1,13 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import type { User } from '@supabase/supabase-js'
 
-async function getUser() {
+/**
+ * 사용자 정보 조회 + public.users 자동 생성 (OAuth/매직링크 대응)
+ * 트리거 실패 시 백업 방어
+ */
+async function getUser(): Promise<User | null> {
   const cookieStore = await cookies()
   
   const supabase = createServerClient(
@@ -27,6 +32,28 @@ async function getUser() {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+  
+  if (user) {
+    // public.users 레코드 보장 (upsert)
+    // 이미 있으면 업데이트, 없으면 생성
+    const { error } = await supabase
+      .from('users')
+      .upsert({
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+        // role은 기존 값 유지 (upsert 시 변경 안 함)
+      }, {
+        onConflict: 'id',
+        ignoreDuplicates: false,
+      })
+    
+    if (error && error.code !== '23505') { // 23505 = unique violation (정상)
+      console.error('[DOTTING] Failed to ensure user profile:', error)
+      // 실패해도 진행 (로그만 남김)
+    }
+  }
+  
   return user
 }
 

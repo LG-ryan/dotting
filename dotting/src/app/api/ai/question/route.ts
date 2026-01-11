@@ -11,6 +11,7 @@ import {
   isShortAnswer,
 } from '@/lib/interview-os'
 import { logQuestionGenerated, logFallbackQuestionUsed } from '@/lib/analytics'
+import { requirePayment } from '@/lib/payment-gate'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -54,6 +55,12 @@ export async function POST(request: NextRequest) {
   try {
     const body: QuestionRequest = await request.json()
     const { sessionId, subjectName, subjectRelation, messages, isFirst } = body
+    
+    // 결제 게이트: paid 상태가 아니면 LLM 호출 차단
+    const paymentGate = await requirePayment(sessionId)
+    if (!paymentGate.allowed) {
+      return paymentGate.response
+    }
     
     // 테스트 모드: fallback 강제 발생 (개발용)
     const url = new URL(request.url)
@@ -145,7 +152,7 @@ ${interviewOSHint}
       content: m.content,
     })) as { role: 'assistant' | 'user'; content: string }[]
 
-    const lastUserMessage = messages.filter(m => m.role === 'user').slice(-1)[0]
+    // lastUserMessage는 73행에서 이미 정의됨
 
     const followUpPrompt = `방금 ${subjectName}님이 다음과 같이 답변하셨습니다:
 "${lastUserMessage?.content}"
