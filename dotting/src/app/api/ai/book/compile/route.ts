@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { CompilationIntent } from '@/types/database'
 import type { CompileOptions } from '../lib/types'
 import { DEFAULT_COMPILE_OPTIONS } from '../lib/types'
+import { requirePayment } from '@/lib/payment-gate'
 
 interface CompileRequestBody {
   sessionId: string
@@ -67,6 +68,12 @@ export async function POST(request: NextRequest) {
         { error: '이 세션에 대한 권한이 없습니다.' },
         { status: 403 }
       )
+    }
+    
+    // 결제 게이트: paid 상태가 아니면 LLM 호출 차단
+    const paymentGate = await requirePayment(body.sessionId)
+    if (!paymentGate.allowed) {
+      return paymentGate.response
     }
     
     // Idempotency 체크

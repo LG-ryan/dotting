@@ -75,18 +75,18 @@ export async function PATCH(
     }
     
     // 타입 단언
-    const compilationData = compilation as {
+    const compilationData = compilation as unknown as {
       id: string
       status: string
       review_status: ReviewStatus
       pdf_snapshot_version: number | null
       pdf_confirmed_at: string | null
       pdf_confirmed_by: string | null
-      sessions: { user_id: string }
+      sessions: { user_id: string }[]
     }
     
     // 소유권 확인
-    if (compilationData.sessions.user_id !== user.id) {
+    if (compilationData.sessions[0]?.user_id !== user.id) {
       return NextResponse.json(
         { error: '이 컴파일에 대한 권한이 없습니다.' },
         { status: 403 }

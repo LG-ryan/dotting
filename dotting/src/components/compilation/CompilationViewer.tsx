@@ -69,7 +69,7 @@ interface CompilationViewerProps {
 const REVIEW_STATUS_CONFIG: Record<ReviewStatus, {
   label: string
   description: string
-  mainCta?: { label: string; action: 'edit' | 'pdf' | 'print' }
+  mainCta?: { label: string; action: 'edit' | 'pdf' | 'pdf_view' | 'print' }
   subCta?: { label: string; action: 'review' | 'edit' | 'contact' }
 }> = {
   'pending_review': {
@@ -359,14 +359,14 @@ export default function CompilationViewer({
   return (
     <div className="space-y-6">
       {/* 상단 상태 바 */}
-      <div className="p-4 bg-gray-50 rounded-lg flex items-center justify-between">
+      <div className="p-4 bg-[var(--dotting-soft-cream)] rounded-lg flex items-center justify-between border border-[var(--dotting-border)]">
         <div>
-          <span className="inline-block px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm font-medium">
+          <span className="inline-block px-3 py-1 bg-[var(--dotting-warm-gold)]/20 text-[var(--dotting-deep-navy)] rounded-full text-sm font-medium">
             {reviewConfig.label}
           </span>
-          <p className="text-gray-600 mt-1">{reviewConfig.description}</p>
+          <p className="text-[var(--dotting-muted-text)] mt-1">{reviewConfig.description}</p>
         </div>
-        <div className="text-right text-sm text-gray-500">
+        <div className="text-right text-sm text-[var(--dotting-muted-text)]">
           <p>버전 {compilation.version}</p>
           {stats && (
             <p>{stats.chapter_count}개 챕터 · {stats.paragraph_count}개 문단</p>
@@ -390,7 +390,7 @@ export default function CompilationViewer({
       
       {/* 서문 */}
       {bookMeta?.intro && (
-        <div className="p-6 bg-gray-50 rounded-lg italic text-gray-700">
+        <div className="p-6 bg-[var(--dotting-soft-cream)] rounded-lg italic text-[var(--dotting-deep-navy)] border border-[var(--dotting-border)]">
           {bookMeta.intro}
         </div>
       )}
@@ -398,23 +398,23 @@ export default function CompilationViewer({
       {/* 챕터 목록 */}
       <div className="space-y-8">
         {chapters.map((chapter) => (
-          <div key={chapter.id} className="border-l-2 border-gray-200 pl-6">
-            <h2 className="text-lg font-medium mb-4">
+          <div key={chapter.id} className="border-l-2 border-[var(--dotting-warm-gold)] pl-6">
+            <h2 className="text-lg font-medium mb-4 text-[var(--dotting-deep-navy)]">
               {chapter.title || `챕터 ${chapter.order_index / 1000}`}
             </h2>
             <div className="space-y-4">
               {chapter.paragraphs.map((para) => (
                 <div key={para.id} className="relative group">
-                  <p className={`text-gray-800 leading-relaxed ${
+                  <p className={`text-[var(--dotting-deep-navy)] leading-relaxed ${
                     ['editorial', 'intro', 'outro'].includes(para.paragraph_type) 
-                      ? 'bg-gray-50 p-3 rounded' 
+                      ? 'bg-[var(--dotting-soft-cream)] p-3 rounded border border-[var(--dotting-border)]' 
                       : ''
                   }`}>
                     {para.content}
                   </p>
                   {/* Soft 힌트 (editorial/intro/outro만) */}
                   {PARAGRAPH_HINTS[para.paragraph_type] && (
-                    <span className="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-gray-400 bg-white px-2 py-1 rounded shadow">
+                    <span className="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-[var(--dotting-muted-text)] bg-white px-2 py-1 rounded shadow">
                       {PARAGRAPH_HINTS[para.paragraph_type]}
                     </span>
                   )}
@@ -427,7 +427,7 @@ export default function CompilationViewer({
       
       {/* 마무리 */}
       {bookMeta?.outro && (
-        <div className="p-6 bg-gray-50 rounded-lg italic text-gray-700">
+        <div className="p-6 bg-[var(--dotting-soft-cream)] rounded-lg italic text-[var(--dotting-deep-navy)] border border-[var(--dotting-border)]">
           {bookMeta.outro}
         </div>
       )}
@@ -445,12 +445,12 @@ export default function CompilationViewer({
       )}
       
       {/* CTA 버튼 */}
-      <div className="flex flex-col items-center gap-3 pt-6 border-t">
+      <div className="flex flex-col items-center gap-3 pt-6 border-t border-[var(--dotting-border)]">
         {reviewConfig.mainCta && (
           <button
             onClick={() => handleMainCta(reviewConfig.mainCta!.action)}
             disabled={actionLoading}
-            className="w-full max-w-sm px-6 py-4 bg-gray-900 text-white rounded-lg hover:bg-black disabled:opacity-50 font-medium"
+            className="w-full max-w-sm px-6 py-4 bg-[var(--dotting-warm-gold)] text-[var(--dotting-deep-navy)] rounded-lg hover:bg-[#C49660] disabled:bg-[#E8DFD3] disabled:text-[#A09080] font-semibold transition-colors"
           >
             {actionLoading ? '처리 중...' : reviewConfig.mainCta.label}
           </button>
@@ -459,7 +459,7 @@ export default function CompilationViewer({
           <button
             onClick={() => handleSubCta(reviewConfig.subCta!.action)}
             disabled={actionLoading}
-            className="text-gray-500 hover:text-gray-700 text-sm"
+            className="text-[var(--dotting-muted-text)] hover:text-[var(--dotting-deep-navy)] text-sm transition-colors"
           >
             {reviewConfig.subCta.label}
           </button>

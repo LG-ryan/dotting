@@ -41,11 +41,11 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="border-0 shadow-xl">
+    <Card className="border-0 shadow-xl bg-white">
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold tracking-tight">DOTTING</CardTitle>
-        <CardDescription>
-          소중한 이야기를 기록하세요
+        <CardTitle className="text-2xl font-bold tracking-tight text-[var(--dotting-deep-navy)]">DOTTING</CardTitle>
+        <CardDescription className="text-[var(--dotting-muted-text)]">
+          소중한 이야기를 책으로 만들어드립니다
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleLogin}>
@@ -56,7 +56,7 @@ export default function LoginPage() {
             </div>
           )}
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-slate-700">
+            <label htmlFor="email" className="text-sm font-medium text-[var(--dotting-deep-navy)]">
               이메일
             </label>
             <Input
@@ -66,11 +66,11 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-11"
+              className="h-11 border-[var(--dotting-border)] focus:border-[var(--dotting-warm-gold)] focus:ring-[var(--dotting-warm-gold)]"
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium text-slate-700">
+            <label htmlFor="password" className="text-sm font-medium text-[var(--dotting-deep-navy)]">
               비밀번호
             </label>
             <Input
@@ -80,21 +80,25 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="h-11"
+              className="h-11 border-[var(--dotting-border)] focus:border-[var(--dotting-warm-gold)] focus:ring-[var(--dotting-warm-gold)]"
             />
           </div>
+          {/* 안심 문구 */}
+          <p className="text-xs text-center text-[var(--dotting-muted-text)]">
+            링크로 보내기 전까지는 아무도 볼 수 없어요
+          </p>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <Button 
             type="submit" 
-            className="w-full h-11 bg-slate-900 hover:bg-slate-800"
+            className="w-full h-11 bg-[var(--dotting-warm-gold)] hover:bg-[#C49660] text-[var(--dotting-deep-navy)] font-semibold"
             disabled={loading}
           >
             {loading ? '로그인 중...' : '로그인'}
           </Button>
-          <p className="text-sm text-center text-slate-600">
+          <p className="text-sm text-center text-[var(--dotting-muted-text)]">
             계정이 없으신가요?{' '}
-            <Link href="/signup" className="font-medium text-slate-900 hover:underline">
+            <Link href="/signup" className="font-medium text-[var(--dotting-deep-navy)] hover:underline">
               회원가입
             </Link>
           </p>

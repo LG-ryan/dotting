@@ -63,18 +63,18 @@ export async function GET(
       )
     }
     
-    const compData = compilation as {
+    const compData = compilation as unknown as {
       id: string
       status: string
       review_status: ReviewStatus
       pdf_snapshot_version: number | null
       pdf_snapshot_at: string | null
       result_meta: any
-      sessions: { user_id: string; subject_name: string }
+      sessions: { user_id: string; subject_name: string }[]
     }
     
     // 소유권 확인
-    if (compData.sessions.user_id !== user.id) {
+    if (compData.sessions[0]?.user_id !== user.id) {
       return NextResponse.json(
         { error: '이 컴파일에 대한 권한이 없습니다.' },
         { status: 403 }
@@ -164,7 +164,7 @@ export async function GET(
         snapshot_version: compData.pdf_snapshot_version,
         snapshot_at: compData.pdf_snapshot_at,
         meta: {
-          title: bookMeta.title || `${compData.sessions.subject_name}의 이야기`,
+          title: bookMeta.title || `${compData.sessions[0]?.subject_name}의 이야기`,
           intro: bookMeta.intro || null,
           outro: bookMeta.outro || null
         },

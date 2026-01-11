@@ -10,6 +10,7 @@ import {
   processQuestionGenerated,
 } from '@/lib/interview-os'
 import { logQuestionGenerated, logFallbackQuestionUsed } from '@/lib/analytics'
+import { requirePayment } from '@/lib/payment-gate'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -71,6 +72,12 @@ export async function POST(request: NextRequest) {
     }
 
     const session = sessionData[0]
+    
+    // 결제 게이트: paid 상태가 아니면 LLM 호출 차단
+    const paymentGate = await requirePayment(session.id, supabaseAdmin)
+    if (!paymentGate.allowed) {
+      return paymentGate.response
+    }
     
     // Interview OS: 현재 상태 가져오기
     const interviewState = await getInterviewState(session.id)

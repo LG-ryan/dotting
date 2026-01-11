@@ -48,37 +48,47 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  
+  /* DOTTING 브랜드 팔레트 */
+  --dotting-gold: #D4A574;
+  --dotting-navy: #1E3A5F;
+  --dotting-cream: #FDF8F3;
+  --dotting-brown: #8B6F47;
+  --dotting-text: #5A6978;
+  --dotting-border: #E8E0D8;
+  
+  /* 기본 테마 - DOTTING 브랜드 적용 */
+  --background: #FDF8F3;
+  --foreground: #1E3A5F;
+  --card: #FFFFFF;
+  --card-foreground: #1E3A5F;
+  --popover: #FFFFFF;
+  --popover-foreground: #1E3A5F;
+  --primary: #D4A574;
+  --primary-foreground: #1E3A5F;
+  --secondary: #F5F0EA;
+  --secondary-foreground: #1E3A5F;
+  --muted: #F5F0EA;
+  --muted-foreground: #5A6978;
+  --accent: #F5F0EA;
+  --accent-foreground: #1E3A5F;
+  --destructive: #DC2626;
+  --border: #E8E0D8;
+  --input: #E8E0D8;
+  --ring: #D4A574;
+  --chart-1: #D4A574;
+  --chart-2: #1E3A5F;
+  --chart-3: #8B6F47;
+  --chart-4: #5A6978;
+  --chart-5: #E8E0D8;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1E3A5F;
+  --sidebar-primary: #D4A574;
+  --sidebar-primary-foreground: #1E3A5F;
+  --sidebar-accent: #F5F0EA;
+  --sidebar-accent-foreground: #1E3A5F;
+  --sidebar-border: #E8E0D8;
+  --sidebar-ring: #D4A574;
 }
 
 .dark {

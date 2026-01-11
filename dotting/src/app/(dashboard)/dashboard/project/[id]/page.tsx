@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import { StoryPreviewModal } from '@/components/story-preview-modal'
+import { OrderStatusCard } from '@/components/payment/OrderStatusBadge'
+import { PaymentModal } from '@/components/payment/PaymentModal'
+import type { OrderPaymentStatus } from '@/types/database'
 
 interface MessageMeta {
   question_source?: 'llm' | 'fallback'
@@ -86,6 +89,10 @@ export default function ProjectPage() {
   const [shareLoading, setShareLoading] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   
+  // 결제/주문 관련 상태
+  const [orderStatus, setOrderStatus] = useState<OrderPaymentStatus | null>(null)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const supabase = createBrowserClient(
@@ -149,6 +156,20 @@ export default function ProjectPage() {
 
     if (sessionData) {
       setSession(sessionData)
+    }
+
+    // 활성 주문 정보 로드
+    const { data: orderData } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('session_id', sessionId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    
+    if (orderData) {
+      setOrderStatus(orderData.status as OrderPaymentStatus)
     }
 
     // 메시지 로드
@@ -688,6 +709,35 @@ export default function ProjectPage() {
           {shareLoading ? '생성 중...' : '링크 공유'}
         </Button>
       </div>
+      
+      {/* 결제/주문 상태 카드 */}
+      {orderStatus && ['pending_payment', 'paid', 'in_production', 'ready_to_ship', 'shipped', 'delivered'].includes(orderStatus) && (
+        <div className="mb-6">
+          <OrderStatusCard status={orderStatus} />
+          {orderStatus === 'pending_payment' && (
+            <Button
+              onClick={() => setShowPaymentModal(true)}
+              className="mt-3 w-full bg-[var(--dotting-deep-navy)] hover:bg-[#2A4A6F]"
+            >
+              결제 안내 보기
+            </Button>
+          )}
+        </div>
+      )}
+      
+      {/* 결제 안내 모달 */}
+      {session && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          sessionId={sessionId}
+          subjectName={session.subject_name}
+          onPaymentRequested={() => {
+            setShowPaymentModal(false)
+            loadSessionAndMessages() // 주문 상태 새로고침
+          }}
+        />
+      )}
 
       {/* 채팅 영역 */}
       <Card className="h-[500px] flex flex-col">
@@ -717,13 +767,13 @@ export default function ProjectPage() {
                       <div className="flex gap-2 justify-end">
                         <button
                           onClick={handleCancelEdit}
-                          className="text-xs text-slate-500 hover:text-slate-700"
+                          className="text-xs text-[var(--dotting-muted-text)] hover:text-[var(--dotting-deep-navy)]"
                         >
                           취소
                         </button>
                         <button
                           onClick={handleSaveEdit}
-                          className="text-xs bg-slate-900 text-white px-3 py-1 rounded hover:bg-slate-800"
+                          className="text-xs bg-[var(--dotting-deep-navy)] text-white px-3 py-1 rounded hover:bg-[#2A4A6F]"
                         >
                           저장
                         </button>
@@ -735,10 +785,10 @@ export default function ProjectPage() {
                       <div
                         className={`p-4 rounded-2xl ${
                           message.role === 'user'
-                            ? 'bg-slate-900 text-white rounded-br-md'
+                            ? 'bg-[var(--dotting-deep-navy)] text-white rounded-br-md'
                             : message.meta?.question_source === 'fallback'
-                            ? 'bg-yellow-50 text-slate-900 rounded-bl-md border border-yellow-200'
-                            : 'bg-slate-100 text-slate-900 rounded-bl-md'
+                            ? 'bg-amber-50 text-[var(--dotting-deep-navy)] rounded-bl-md border border-amber-200'
+                            : 'bg-[var(--dotting-soft-cream)] text-[var(--dotting-deep-navy)] rounded-bl-md border border-[var(--dotting-border)]'
                         }`}
                       >
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -748,7 +798,7 @@ export default function ProjectPage() {
                       {isLastUserMessage && !generating && (
                         <button
                           onClick={() => handleStartEdit(message)}
-                          className="text-xs text-slate-400 hover:text-slate-600 mt-1"
+                          className="text-xs text-[var(--dotting-muted-text)] hover:text-[var(--dotting-deep-navy)] mt-1"
                         >
                           수정
                         </button>
@@ -782,8 +832,8 @@ export default function ProjectPage() {
 
           {generating && (
             <div className="flex justify-start">
-              <div className="bg-slate-100 text-slate-600 p-4 rounded-2xl rounded-bl-md">
-                <p className="text-sm">질문을 생각하고 있어요...</p>
+              <div className="bg-[var(--dotting-soft-cream)] text-[var(--dotting-deep-navy)] p-4 rounded-2xl rounded-bl-md border border-[var(--dotting-border)]">
+                <p className="text-sm">질문을 생각하고 있어요 ●●●</p>
               </div>
             </div>
           )}
@@ -800,7 +850,7 @@ export default function ProjectPage() {
                 <button
                   onClick={handleRetryQuestion}
                   disabled={retryingQuestion}
-                  className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1"
+                  className="text-sm text-[var(--dotting-warm-brown)] hover:text-[var(--dotting-deep-navy)] flex items-center gap-1"
                 >
                   <span>↻</span>
                   {retryingQuestion ? '다시 만드는 중...' : '다른 질문 받기'}
@@ -813,7 +863,7 @@ export default function ProjectPage() {
         </div>
 
         {/* 입력 영역 */}
-        <div className="border-t border-slate-200 p-4">
+        <div className="border-t border-[var(--dotting-border)] p-4">
           <div className="flex space-x-3">
             <Textarea
               value={inputText}
@@ -826,12 +876,12 @@ export default function ProjectPage() {
             <Button
               onClick={handleSendMessage}
               disabled={!inputText.trim() || sending || generating}
-              className="h-[60px] px-6 bg-slate-900 hover:bg-slate-800"
+              className="h-[60px] px-6"
             >
               전송
             </Button>
           </div>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="text-xs text-[var(--dotting-muted-text)] mt-2">
             Enter로 전송, Shift+Enter로 줄바꿈
           </p>
         </div>
@@ -839,7 +889,7 @@ export default function ProjectPage() {
 
       {/* 하단 액션 */}
       <div className="mt-6 flex justify-between items-center">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-[var(--dotting-muted-text)]">
           {!canGenerateStory 
             ? `답변이 ${5 - userAnswerCount}개 더 필요해요`
             : hasExistingPreview && previewIsStale
@@ -849,7 +899,6 @@ export default function ProjectPage() {
             : '이야기를 정리할 준비가 되었어요'}
         </p>
         <Button
-          variant="outline"
           disabled={!canGenerateStory}
           onClick={handleStartPreview}
         >
@@ -874,13 +923,13 @@ export default function ProjectPage() {
       {showRegenerateConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md p-6 bg-white">
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">
+            <h3 className="text-lg font-semibold text-[var(--dotting-deep-navy)] mb-2">
               답변이 수정되었어요
             </h3>
-            <p className="text-slate-600 text-sm mb-6">
+            <p className="text-[var(--dotting-muted-text)] text-sm mb-6">
               다음 질문을 다시 만들까요? 
               <br />
-              <span className="text-slate-500">그대로 두면 이전 질문이 유지됩니다.</span>
+              <span className="text-[var(--dotting-muted-text)]/70">그대로 두면 이전 질문이 유지됩니다.</span>
             </p>
             <div className="flex gap-3 justify-end">
               <Button
@@ -890,8 +939,8 @@ export default function ProjectPage() {
                 그대로 두기
               </Button>
               <Button
+                variant="secondary"
                 onClick={handleConfirmRegenerate}
-                className="bg-slate-900 hover:bg-slate-800"
               >
                 다시 만들기
               </Button>
@@ -904,17 +953,17 @@ export default function ProjectPage() {
       {showShareModal && shareUrl && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md p-6 bg-white">
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">
+            <h3 className="text-lg font-semibold text-[var(--dotting-deep-navy)] mb-2">
               공유 링크가 생성되었어요
             </h3>
-            <p className="text-slate-600 text-sm mb-4">
+            <p className="text-[var(--dotting-muted-text)] text-sm mb-4">
               이 링크를 {session?.subject_name}님께 보내드리세요.
               <br />
-              <span className="text-amber-600">로그인 없이 바로 답변하실 수 있어요.</span>
+              <span className="text-[var(--dotting-warm-brown)]">로그인 없이 바로 답변하실 수 있어요.</span>
             </p>
             
-            <div className="bg-slate-50 rounded-lg p-3 mb-4">
-              <p className="text-sm text-slate-700 break-all font-mono">
+            <div className="bg-[var(--dotting-soft-cream)] rounded-lg p-3 mb-4 border border-[var(--dotting-border)]">
+              <p className="text-sm text-[var(--dotting-deep-navy)] break-all font-mono">
                 {shareUrl}
               </p>
             </div>
@@ -928,14 +977,14 @@ export default function ProjectPage() {
                 닫기
               </Button>
               <Button
-                className="flex-1 bg-amber-600 hover:bg-amber-700"
+                className="flex-1"
                 onClick={handleCopyShareLink}
               >
                 {shareCopied ? '복사됨!' : '링크 복사'}
               </Button>
             </div>
             
-            <p className="text-xs text-slate-400 text-center mt-4">
+            <p className="text-xs text-[var(--dotting-muted-text)] text-center mt-4">
               링크는 30일간 유효합니다
             </p>
           </Card>
