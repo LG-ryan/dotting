@@ -813,7 +813,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
         <div className="mb-6 p-4 bg-white rounded-xl border border-[var(--dotting-border)]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-[var(--dotting-deep-navy)]">
-              답변 모으는 중
+              이야기 수집 중
             </span>
             <span className="text-sm text-[var(--dotting-muted-gray)]">
               {freeQuestionsUsed} / {FREE_QUESTIONS_LIMIT}
