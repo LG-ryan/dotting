@@ -9,7 +9,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { PACKAGES, PACKAGE_PRICES } from '@/lib/payment-gate'
+import { PACKAGES, PACKAGE_PRICES } from '@/lib/payment-constants'
 import type { PackageType } from '@/types/database'
 
 interface PaymentModalProps {

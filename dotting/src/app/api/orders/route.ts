@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { PACKAGE_PRICES } from '@/lib/payment-gate'
+import { PACKAGE_PRICES } from '@/lib/payment-constants'
 import type { PackageType } from '@/types/database'
 
 /**
