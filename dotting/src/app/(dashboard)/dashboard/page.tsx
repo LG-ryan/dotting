@@ -53,7 +53,7 @@ async function getSessions(): Promise<SessionWithOrder[]> {
   if (!user) return []
 
   // 세션과 활성 주문 정보 함께 조회
-  const { data: sessions } = await supabase
+  const { data: sessions, error: sessionsError } = await supabase
     .from('sessions')
     .select(`
       id,
@@ -72,6 +72,10 @@ async function getSessions(): Promise<SessionWithOrder[]> {
     `)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
+
+  // 디버깅 로그
+  console.log('[DOTTING Dashboard] user.id:', user.id)
+  console.log('[DOTTING Dashboard] sessions:', sessions?.length || 0, 'error:', sessionsError)
 
   if (!sessions) return []
 

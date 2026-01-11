@@ -49,9 +49,12 @@ async function getUser(): Promise<User | null> {
       })
     
     if (error && error.code !== '23505') { // 23505 = unique violation (정상)
-      console.error('[DOTTING] Failed to ensure user profile:', error)
+      console.error('[DOTTING] Failed to ensure user profile:', JSON.stringify(error, null, 2))
       // 실패해도 진행 (로그만 남김)
     }
+    
+    // 디버깅: 사용자 ID 확인
+    console.log('[DOTTING Layout] Logged in user:', user.id, user.email)
   }
   
   return user

@@ -35,6 +35,9 @@ export default function NewProjectPage() {
       return
     }
 
+    // 디버깅 로그
+    console.log('[DOTTING New] Creating session for user:', user.id)
+
     const { data, error } = await supabase
       .from('sessions')
       .insert({
@@ -46,6 +49,8 @@ export default function NewProjectPage() {
       })
       .select()
       .single()
+
+    console.log('[DOTTING New] Session created:', data?.id, 'error:', error)
 
     if (error) {
       setError(error.message)
