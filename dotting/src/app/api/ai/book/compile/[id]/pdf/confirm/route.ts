@@ -48,17 +48,17 @@ export async function POST(
       )
     }
     
-    const compData = compilation as {
+    const compData = compilation as unknown as {
       id: string
       status: string
       review_status: ReviewStatus
       pdf_snapshot_version: number | null
       pdf_confirmed_at: string | null
-      sessions: { user_id: string }
+      sessions: { user_id: string }[]
     }
     
     // 소유권 확인
-    if (compData.sessions.user_id !== user.id) {
+    if (compData.sessions[0]?.user_id !== user.id) {
       return NextResponse.json(
         { error: '이 컴파일에 대한 권한이 없습니다.' },
         { status: 403 }

@@ -127,7 +127,7 @@ export function OrderStatusCard({ status }: { status: OrderStatus | null }) {
   const config = STATUS_CONFIG[status]
   
   // 상태별 아이콘
-  const icons: Record<OrderStatus, JSX.Element> = {
+  const icons: Record<OrderStatus, React.ReactNode> = {
     pending_payment: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

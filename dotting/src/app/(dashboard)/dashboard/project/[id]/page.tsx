@@ -726,10 +726,18 @@ export default function ProjectPage() {
       )}
       
       {/* 결제 안내 모달 */}
-      <PaymentModal
-        open={showPaymentModal}
-        onOpenChange={setShowPaymentModal}
-      />
+      {session && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          sessionId={sessionId}
+          subjectName={session.subject_name}
+          onPaymentRequested={() => {
+            setShowPaymentModal(false)
+            loadSessionAndMessages() // 주문 상태 새로고침
+          }}
+        />
+      )}
 
       {/* 채팅 영역 */}
       <Card className="h-[500px] flex flex-col">

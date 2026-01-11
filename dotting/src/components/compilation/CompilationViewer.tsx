@@ -69,7 +69,7 @@ interface CompilationViewerProps {
 const REVIEW_STATUS_CONFIG: Record<ReviewStatus, {
   label: string
   description: string
-  mainCta?: { label: string; action: 'edit' | 'pdf' | 'print' }
+  mainCta?: { label: string; action: 'edit' | 'pdf' | 'pdf_view' | 'print' }
   subCta?: { label: string; action: 'review' | 'edit' | 'contact' }
 }> = {
   'pending_review': {

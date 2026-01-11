@@ -508,7 +508,7 @@ export default function RespondPage() {
                 navigator.clipboard.writeText(text)
                 alert('문구가 복사되었어요!')
               }}
-              className={`w-full ${s.button} bg-stone-100 text-stone-700 hover:bg-stone-200 transition-colors`}
+              className={`w-full ${s.buttonHeight} ${s.buttonText} ${s.card} bg-stone-100 text-stone-700 hover:bg-stone-200 transition-colors`}
             >
               📋 문구 복사하기
             </button>

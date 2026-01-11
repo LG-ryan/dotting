@@ -63,16 +63,16 @@ export async function PATCH(
       )
     }
     
-    const compData = compilation as {
+    const compData = compilation as unknown as {
       id: string
       status: string
       review_status: ReviewStatus
       session_id: string
-      sessions: { user_id: string }
+      sessions: { user_id: string }[]
     }
     
     // 소유권 확인
-    if (compData.sessions.user_id !== user.id) {
+    if (compData.sessions[0]?.user_id !== user.id) {
       return NextResponse.json(
         { error: '이 컴파일에 대한 권한이 없습니다.' },
         { status: 403 }
@@ -110,18 +110,18 @@ export async function PATCH(
       )
     }
     
-    const paraData = paragraph as {
+    const paraData = paragraph as unknown as {
       id: string
       chapter_id: string
       content: string
       revision: number
       is_hidden: boolean
       order_index: number
-      compiled_chapters: { compilation_id: string; order_index: number }
+      compiled_chapters: { compilation_id: string; order_index: number }[]
     }
     
     // 컴파일 ID 일치 확인
-    if (paraData.compiled_chapters.compilation_id !== compilationId) {
+    if (paraData.compiled_chapters[0]?.compilation_id !== compilationId) {
       return NextResponse.json(
         { error: '문단이 이 컴파일에 속하지 않습니다.' },
         { status: 400 }
@@ -228,7 +228,7 @@ export async function PATCH(
         {
           before_length: paraData.content?.length || 0,
           after_length: body.content.length,
-          chapter_index: paraData.compiled_chapters.order_index,
+          chapter_index: paraData.compiled_chapters[0]?.order_index,
           paragraph_index: paraData.order_index,
         }
       )
