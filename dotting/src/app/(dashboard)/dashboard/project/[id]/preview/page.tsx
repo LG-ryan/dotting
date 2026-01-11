@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { PaymentModal } from '@/components/payment/PaymentModal'
 import type { OrderPaymentStatus } from '@/types/database'
+import { PAID_ORDER_STATUSES } from '@/lib/free-tier-limits'
 
 interface Chapter {
   id: string
@@ -80,8 +81,8 @@ export default function PreviewPage() {
     
     if (orderData) {
       setOrderStatus(orderData.status as OrderPaymentStatus)
-      const paidStatuses = ['paid', 'in_production', 'ready_to_ship', 'shipped', 'delivered', 'completed']
-      setIsPaidSession(paidStatuses.includes(orderData.status))
+      // 결제 완료 상태 확인 (단일 소스 상수 사용)
+      setIsPaidSession(PAID_ORDER_STATUSES.includes(orderData.status as typeof PAID_ORDER_STATUSES[number]))
     }
 
     // 최신 draft 로드

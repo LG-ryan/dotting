@@ -12,15 +12,31 @@ import {
 } from '@/lib/interview-os'
 import { logQuestionGenerated, logFallbackQuestionUsed } from '@/lib/analytics'
 import { requirePayment } from '@/lib/payment-gate'
-import { FREE_QUESTIONS_LIMIT, LIMIT_MESSAGES } from '@/lib/free-tier-limits'
+import { FREE_QUESTIONS_LIMIT, LIMIT_MESSAGES, PAID_ORDER_STATUSES } from '@/lib/free-tier-limits'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-// 세션의 AI 질문 수 조회
-async function getQuestionCount(sessionId: string): Promise<number> {
+// 세션 소유권 확인 + AI 질문 수 조회
+async function verifySessionAndGetCount(
+  sessionId: string, 
+  userId: string
+): Promise<{ authorized: boolean; questionCount: number }> {
   const supabase = await createClient()
+  
+  // 세션 소유권 확인
+  const { data: session } = await supabase
+    .from('sessions')
+    .select('user_id')
+    .eq('id', sessionId)
+    .single()
+  
+  if (!session || session.user_id !== userId) {
+    return { authorized: false, questionCount: 0 }
+  }
+  
+  // AI 질문 수 조회
   const { count } = await supabase
     .from('messages')
     .select('*', { count: 'exact', head: true })
@@ -28,7 +44,7 @@ async function getQuestionCount(sessionId: string): Promise<number> {
     .eq('role', 'ai')
     .is('deleted_at', null)
   
-  return count || 0
+  return { authorized: true, questionCount: count || 0 }
 }
 
 // 결제 완료된 세션인지 확인
@@ -39,7 +55,7 @@ async function isPaidSession(sessionId: string): Promise<boolean> {
     .select('status')
     .eq('session_id', sessionId)
     .eq('is_active', true)
-    .in('status', ['paid', 'in_production', 'ready_to_ship', 'shipped', 'delivered', 'completed'])
+    .in('status', PAID_ORDER_STATUSES as unknown as string[])
     .limit(1)
     .single()
   
@@ -85,10 +101,28 @@ export async function POST(request: NextRequest) {
     const body: QuestionRequest = await request.json()
     const { sessionId, subjectName, subjectRelation, messages, isFirst } = body
     
-    // 1. 무료 질문 제한 체크 (결제 안 한 세션만)
+    // 0. 인증 확인
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: '인증이 필요합니다.' },
+        { status: 401 }
+      )
+    }
+    
+    // 1. 세션 소유권 확인 + 질문 카운트 조회
+    const { authorized, questionCount } = await verifySessionAndGetCount(sessionId, user.id)
+    if (!authorized) {
+      return NextResponse.json(
+        { error: '이 세션에 대한 권한이 없습니다.' },
+        { status: 403 }
+      )
+    }
+    
+    // 2. 무료 질문 제한 체크 (결제 안 한 세션만)
     const isPaid = await isPaidSession(sessionId)
     if (!isPaid) {
-      const questionCount = await getQuestionCount(sessionId)
       if (questionCount >= FREE_QUESTIONS_LIMIT) {
         return NextResponse.json({
           error: 'FREE_LIMIT_EXCEEDED',
@@ -101,7 +135,7 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // 2. 결제 게이트: paid 상태가 아니면 LLM 호출 차단 (기존 로직 - 로컬에서는 우회됨)
+    // 3. 결제 게이트: paid 상태가 아니면 LLM 호출 차단 (기존 로직 - 로컬에서는 우회됨)
     const paymentGate = await requirePayment(sessionId)
     if (!paymentGate.allowed) {
       return paymentGate.response

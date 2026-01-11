@@ -10,6 +10,18 @@ export const FREE_QUESTIONS_LIMIT = 10
 // 무료 미리보기 횟수 (프로젝트당)
 export const FREE_PREVIEW_LIMIT = 2
 
+// 결제 완료로 간주되는 주문 상태 (단일 소스)
+export const PAID_ORDER_STATUSES = [
+  'paid',
+  'in_production', 
+  'ready_to_ship',
+  'shipped',
+  'delivered',
+  'completed',
+] as const
+
+export type PaidOrderStatus = typeof PAID_ORDER_STATUSES[number]
+
 // 제한 초과 메시지
 export const LIMIT_MESSAGES = {
   questions: {

@@ -10,7 +10,7 @@ import { StoryPreviewModal } from '@/components/story-preview-modal'
 import { OrderStatusCard } from '@/components/payment/OrderStatusBadge'
 import { PaymentModal } from '@/components/payment/PaymentModal'
 import type { OrderPaymentStatus } from '@/types/database'
-import { FREE_QUESTIONS_LIMIT, LIMIT_MESSAGES } from '@/lib/free-tier-limits'
+import { FREE_QUESTIONS_LIMIT, LIMIT_MESSAGES, PAID_ORDER_STATUSES } from '@/lib/free-tier-limits'
 
 interface MessageMeta {
   question_source?: 'llm' | 'fallback'
@@ -176,9 +176,8 @@ export default function ProjectPage() {
     
     if (orderData) {
       setOrderStatus(orderData.status as OrderPaymentStatus)
-      // 결제 완료 상태 확인
-      const paidStatuses = ['paid', 'in_production', 'ready_to_ship', 'shipped', 'delivered', 'completed']
-      setIsPaidSession(paidStatuses.includes(orderData.status))
+      // 결제 완료 상태 확인 (단일 소스 상수 사용)
+      setIsPaidSession(PAID_ORDER_STATUSES.includes(orderData.status as typeof PAID_ORDER_STATUSES[number]))
     }
 
     // 메시지 로드
