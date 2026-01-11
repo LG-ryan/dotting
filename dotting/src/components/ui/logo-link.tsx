@@ -33,9 +33,10 @@ export function LogoLink({ className = '', showConfirm }: LogoLinkProps) {
     <>
       <button
         onClick={handleClick}
-        className={`text-xl font-bold tracking-tight text-[var(--dotting-deep-navy)] hover:opacity-80 transition-opacity ${className}`}
+        className={`dotting-wordmark dotting-wordmark--md ${className}`}
       >
-        DOTTING
+        <span className="dotting-wordmark-d">D</span>
+        <span className="dotting-wordmark-otting">OTTING</span>
       </button>
 
       {/* 확인 모달 */}

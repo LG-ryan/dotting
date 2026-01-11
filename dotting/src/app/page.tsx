@@ -73,9 +73,10 @@ export default function LandingPage() {
       {/* Navigation - 조용한 럭셔리 */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-[var(--dotting-border)]">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          {/* 로고 - 워드마크만 */}
-          <Link href="/" className="text-2xl font-bold tracking-tight text-[var(--dotting-deep-navy)]">
-            DOTTING
+          {/* 로고 - 정교화된 워드마크 */}
+          <Link href="/" className="dotting-wordmark dotting-wordmark--lg">
+            <span className="dotting-wordmark-d">D</span>
+            <span className="dotting-wordmark-otting">OTTING</span>
           </Link>
           {!checkingAuth && (
             isLoggedIn ? (
@@ -662,9 +663,10 @@ export default function LandingPage() {
       <footer className="py-12 px-6 bg-[#0F1F2E]">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            {/* 로고 - 워드마크만 (●●● 분리) */}
-            <Link href="/" className="text-xl font-bold text-white tracking-wide">
-              DOTTING
+            {/* 로고 - 정교화된 워드마크 */}
+            <Link href="/" className="dotting-wordmark dotting-wordmark--md dotting-wordmark--white">
+              <span className="dotting-wordmark-d">D</span>
+              <span className="dotting-wordmark-otting">OTTING</span>
             </Link>
             <div className="flex gap-6 text-sm text-white/50">
               <a href="#" className="hover:text-white transition-colors">이용약관</a>

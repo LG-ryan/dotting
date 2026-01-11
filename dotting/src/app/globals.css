@@ -391,3 +391,53 @@
   height: 5px;
   background-color: var(--dotting-warm-amber);
 }
+
+/* ============================================
+   DOTTING 워드마크 CI
+   ============================================ */
+
+/* 기본 워드마크 */
+.dotting-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  font-weight: 700;
+  color: var(--dotting-deep-navy);
+}
+
+/* D: 약간 타이트하게 */
+.dotting-wordmark-d {
+  letter-spacing: -0.02em;
+}
+
+/* OTTING: 넉넉한 자간 */
+.dotting-wordmark-otting {
+  letter-spacing: 0.08em;
+}
+
+/* 사이즈 변형 */
+.dotting-wordmark--sm {
+  font-size: 1rem; /* 16px */
+}
+
+.dotting-wordmark--md {
+  font-size: 1.25rem; /* 20px */
+}
+
+.dotting-wordmark--lg {
+  font-size: 1.5rem; /* 24px */
+}
+
+.dotting-wordmark--xl {
+  font-size: 2rem; /* 32px */
+}
+
+/* 흰색 버전 (푸터 등) */
+.dotting-wordmark--white {
+  color: white;
+}
+
+/* 호버 효과 */
+.dotting-wordmark:hover {
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
