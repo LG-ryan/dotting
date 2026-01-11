@@ -321,6 +321,8 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
 
     if (savedUserMessage) {
       setMessages(prev => [...prev, savedUserMessage])
+      // 답변 수 즉시 업데이트 (UX: 바로 반영)
+      setFreeQuestionsUsed(prev => prev + 1)
     }
 
     // AI 후속 질문 생성

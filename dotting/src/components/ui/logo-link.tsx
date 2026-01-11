@@ -60,15 +60,15 @@ export function LogoLink({ className = '', showConfirm }: LogoLinkProps) {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 py-2.5 px-4 rounded-xl border border-[var(--dotting-border)] text-[var(--dotting-deep-navy)] hover:bg-gray-50 transition-colors"
+                className="flex-1 py-2.5 px-4 rounded-xl border border-[var(--dotting-border)] text-[var(--dotting-deep-navy)] hover:bg-gray-50 transition-colors whitespace-nowrap"
               >
                 취소
               </button>
               <button
                 onClick={handleConfirm}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-[var(--dotting-deep-navy)] text-white hover:bg-[#2A4A6F] transition-colors"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-[var(--dotting-deep-navy)] text-white hover:bg-[#2A4A6F] transition-colors whitespace-nowrap"
               >
-                홈으로 이동
+                홈으로
               </button>
             </div>
           </div>
