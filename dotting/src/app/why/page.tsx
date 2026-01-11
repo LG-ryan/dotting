@@ -1,9 +1,29 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function WhyPage() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+      setCheckingAuth(false);
+    };
+
+    checkAuth();
+  }, []);
+
   return (
     <div className="min-h-screen bg-[var(--dotting-soft-cream)]">
       {/* Navigation */}
@@ -12,9 +32,17 @@ export default function WhyPage() {
           <Link href="/" className="text-xl font-bold tracking-tight text-[var(--dotting-deep-navy)]">
             DOTTING
           </Link>
-          <Link href="/login">
-            <Button variant="ghost" size="sm">로그인</Button>
-          </Link>
+          {!checkingAuth && (
+            isLoggedIn ? (
+              <Link href="/dashboard">
+                <Button variant="ghost" size="sm">내 프로젝트</Button>
+              </Link>
+            ) : (
+              <Link href="/login">
+                <Button variant="ghost" size="sm">로그인</Button>
+              </Link>
+            )
+          )}
         </div>
       </nav>
 

@@ -1,11 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // 인증 상태 확인
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+      setCheckingAuth(false);
+    };
+
+    checkAuth();
+
+    // 인증 상태 변경 구독
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const faqs = [
     {
@@ -51,9 +77,17 @@ export default function LandingPage() {
           <Link href="/" className="text-2xl font-bold tracking-tight text-[var(--dotting-deep-navy)]">
             DOTTING
           </Link>
-          <Link href="/login">
-            <Button variant="ghost" size="sm">로그인</Button>
-          </Link>
+          {!checkingAuth && (
+            isLoggedIn ? (
+              <Link href="/dashboard">
+                <Button variant="ghost" size="sm">내 프로젝트</Button>
+              </Link>
+            ) : (
+              <Link href="/login">
+                <Button variant="ghost" size="sm">로그인</Button>
+              </Link>
+            )
+          )}
         </div>
       </nav>
 
