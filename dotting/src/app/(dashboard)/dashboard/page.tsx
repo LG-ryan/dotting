@@ -52,24 +52,10 @@ async function getSessions(): Promise<SessionWithOrder[]> {
   
   if (!user) return []
 
-  // 세션과 활성 주문 정보 함께 조회
+  // 세션만 먼저 조회 (orders join 제거 - RLS 문제 회피)
   const { data: sessions, error: sessionsError } = await supabase
     .from('sessions')
-    .select(`
-      id,
-      subject_name,
-      subject_relation,
-      mode,
-      status,
-      created_at,
-      orders!orders_session_id_fkey (
-        id,
-        status,
-        package_type,
-        amount,
-        is_active
-      )
-    `)
+    .select('id, subject_name, subject_relation, mode, status, created_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
@@ -77,35 +63,37 @@ async function getSessions(): Promise<SessionWithOrder[]> {
   console.log('[DOTTING Dashboard] user.id:', user.id)
   console.log('[DOTTING Dashboard] sessions:', sessions?.length || 0, 'error:', sessionsError)
 
-  if (!sessions) return []
+  if (!sessions || sessions.length === 0) return []
 
-  // 활성 주문만 필터링해서 매핑
-  return sessions.map((session) => {
-    const orders = session.orders as Array<{
-      id: string
-      status: OrderPaymentStatus
-      package_type: string
-      amount: number
-      is_active: boolean
-    }> | null
-    
-    const activeOrder = orders?.find((o) => o.is_active) || null
-    
-    return {
-      id: session.id,
-      subject_name: session.subject_name,
-      subject_relation: session.subject_relation,
-      mode: session.mode,
-      status: session.status,
-      created_at: session.created_at,
-      activeOrder: activeOrder ? {
-        id: activeOrder.id,
-        status: activeOrder.status,
-        package_type: activeOrder.package_type,
-        amount: activeOrder.amount,
-      } : null,
-    }
-  })
+  // 각 세션의 활성 주문 별도 조회
+  const sessionsWithOrders = await Promise.all(
+    sessions.map(async (session) => {
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('id, status, package_type, amount')
+        .eq('session_id', session.id)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle()
+
+      return {
+        id: session.id,
+        subject_name: session.subject_name,
+        subject_relation: session.subject_relation,
+        mode: session.mode,
+        status: session.status,
+        created_at: session.created_at,
+        activeOrder: orderData ? {
+          id: orderData.id,
+          status: orderData.status as OrderPaymentStatus,
+          package_type: orderData.package_type,
+          amount: orderData.amount,
+        } : null,
+      }
+    })
+  )
+
+  return sessionsWithOrders
 }
 
 export default async function DashboardPage() {
