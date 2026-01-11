@@ -22,7 +22,7 @@ export default async function AdminLayout({
       id: user.id,
       email: user.email,
       name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-    }, {
+    } as { id: string; email: string; name: string }, {
       onConflict: 'id',
       ignoreDuplicates: false,
     })

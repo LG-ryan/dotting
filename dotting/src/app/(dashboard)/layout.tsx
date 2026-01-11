@@ -43,7 +43,7 @@ async function getUser(): Promise<User | null> {
         email: user.email,
         name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
         // role은 기존 값 유지 (upsert 시 변경 안 함)
-      }, {
+      } as { id: string; email: string; name: string }, {
         onConflict: 'id',
         ignoreDuplicates: false,
       })
