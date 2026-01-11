@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card'
 import { StoryPreviewModal } from '@/components/story-preview-modal'
 import { OrderStatusCard } from '@/components/payment/OrderStatusBadge'
 import { PaymentModal } from '@/components/payment/PaymentModal'
+import { FreeLimitCelebrationModal } from '@/components/payment/FreeLimitCelebrationModal'
 import type { OrderPaymentStatus } from '@/types/database'
 import { FREE_QUESTIONS_LIMIT, LIMIT_MESSAGES, PAID_ORDER_STATUSES } from '@/lib/free-tier-limits'
 
@@ -98,6 +99,7 @@ export default function ProjectPage() {
   const [freeQuestionsUsed, setFreeQuestionsUsed] = useState(0)
   const [freeLimitReached, setFreeLimitReached] = useState(false)
   const [isPaidSession, setIsPaidSession] = useState(false)
+  const [showCelebrationModal, setShowCelebrationModal] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -353,10 +355,11 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
 
       const data = await response.json()
 
-      // 무료 제한 초과 처리
+      // 무료 제한 초과 처리 - 축하 모달 띄우기
       if (response.status === 402 && data.error === 'FREE_LIMIT_EXCEEDED') {
         setFreeLimitReached(true)
         setFreeQuestionsUsed(data.current_count)
+        setShowCelebrationModal(true) // 자연스러운 축하 모달!
         setGenerating(false)
         return
       }
@@ -814,30 +817,30 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
         </div>
       )}
 
-      {/* 무료 제한 초과 안내 */}
+      {/* 무료 제한 초과 안내 - 축하 스타일 */}
       {freeLimitReached && !isPaidSession && (
-        <Card className="mb-4 p-6 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+        <Card className="mb-4 p-6 bg-gradient-to-r from-amber-50 via-orange-50 to-rose-50 border-amber-200 shadow-lg">
           <div className="text-center">
-            <div className="text-3xl mb-2">📖</div>
-            <h3 className="text-lg font-bold text-[var(--dotting-deep-navy)] mb-2">
-              {LIMIT_MESSAGES.questions.title}
+            <div className="text-4xl mb-3">🎉</div>
+            <h3 className="text-lg font-bold text-amber-800 mb-2">
+              {freeQuestionsUsed}개의 소중한 이야기가 모였어요!
             </h3>
-            <p className="text-[var(--dotting-muted-text)] mb-4">
-              {LIMIT_MESSAGES.questions.description}
+            <p className="text-amber-700/80 mb-4">
+              이제 책으로 완성할 준비가 됐어요
             </p>
             <div className="flex gap-3 justify-center">
               <Button
                 variant="outline"
                 onClick={() => setShowPreviewModal(true)}
-                className="text-sm"
+                className="text-sm border-amber-300 hover:bg-amber-50"
               >
-                미리보기
+                👀 미리보기
               </Button>
               <Button
-                onClick={() => setShowPaymentModal(true)}
-                className="bg-[var(--dotting-deep-navy)] hover:bg-[#2A4A6F] text-white"
+                onClick={() => setShowCelebrationModal(true)}
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md"
               >
-                {LIMIT_MESSAGES.questions.cta}
+                📖 책으로 완성하기
               </Button>
             </div>
           </div>
@@ -993,16 +996,16 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
         {/* 입력 영역 */}
         <div className="border-t border-[var(--dotting-border)] p-4">
           {freeLimitReached && !isPaidSession ? (
-            // 무료 제한 초과 시 입력 비활성화
-            <div className="text-center py-4">
-              <p className="text-[var(--dotting-muted-text)] text-sm mb-3">
-                무료 질문을 모두 사용했어요. 결제 후 계속 진행할 수 있어요.
+            // 무료 제한 초과 시 - 성취감 있는 메시지
+            <div className="text-center py-4 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-lg">
+              <p className="text-amber-700 text-sm mb-3">
+                ✨ 이야기가 충분히 모였어요! 이제 책으로 완성해보세요
               </p>
               <Button
-                onClick={() => setShowPaymentModal(true)}
-                className="bg-[var(--dotting-deep-navy)] hover:bg-[#2A4A6F]"
+                onClick={() => setShowCelebrationModal(true)}
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
               >
-                결제하고 계속하기
+                📖 책으로 완성하기
               </Button>
             </div>
           ) : (
@@ -1134,6 +1137,20 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
             </p>
           </Card>
         </div>
+      )}
+
+      {/* 무료 제한 도달 축하 모달 */}
+      {session && (
+        <FreeLimitCelebrationModal
+          isOpen={showCelebrationModal}
+          onClose={() => setShowCelebrationModal(false)}
+          onProceedToPayment={() => {
+            setShowCelebrationModal(false)
+            setShowPaymentModal(true)
+          }}
+          subjectName={session.subject_name}
+          questionCount={freeQuestionsUsed}
+        />
       )}
     </div>
   )
