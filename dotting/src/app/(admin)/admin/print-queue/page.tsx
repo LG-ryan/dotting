@@ -37,6 +37,7 @@ interface PrintOrder {
   compilation?: {
     pdf_snapshot_version: number | null
     session?: {
+      id: string
       subject_name: string
       user?: {
         email: string
