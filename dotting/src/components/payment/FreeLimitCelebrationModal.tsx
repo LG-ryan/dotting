@@ -42,6 +42,15 @@ export function FreeLimitCelebrationModal({
       
       {/* 모달 컨텐츠 */}
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-300">
+        {/* X 닫기 버튼 */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors"
+          aria-label="닫기"
+        >
+          ✕
+        </button>
+        
         {/* 상단 그라데이션 헤더 */}
         <div className="bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 p-8 text-center relative overflow-hidden">
           {/* 장식 원들 */}
@@ -105,7 +114,7 @@ export function FreeLimitCelebrationModal({
               onClick={onClose}
               className="w-full py-3 text-gray-500 hover:text-gray-700 text-sm transition-colors"
             >
-              조금 더 이야기 나눌래요
+              나중에 할게요
             </button>
           </div>
         </div>
@@ -113,7 +122,7 @@ export function FreeLimitCelebrationModal({
         {/* 하단 안내 */}
         <div className="border-t border-gray-100 px-6 py-4 bg-gray-50">
           <p className="text-xs text-gray-400 text-center">
-            무료 체험이 끝났어요. 결제 후 무제한으로 질문하고 수정할 수 있어요.
+            모인 이야기는 저장되어 있어요. 언제든 돌아와서 책으로 완성할 수 있어요.
           </p>
         </div>
       </div>

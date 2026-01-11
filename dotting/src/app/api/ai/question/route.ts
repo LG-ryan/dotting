@@ -112,11 +112,12 @@ export async function POST(request: NextRequest) {
     }
     
     // 1. 세션 소유권 확인 + 질문 카운트 조회
+    // 보안: 404로 통일하여 세션 존재 여부 힌트 최소화
     const { authorized, questionCount } = await verifySessionAndGetCount(sessionId, user.id)
     if (!authorized) {
       return NextResponse.json(
-        { error: '이 세션에 대한 권한이 없습니다.' },
-        { status: 403 }
+        { error: '세션을 찾을 수 없습니다.' },
+        { status: 404 }
       )
     }
     
