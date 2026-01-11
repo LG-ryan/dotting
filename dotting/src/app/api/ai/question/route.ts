@@ -36,12 +36,12 @@ async function verifySessionAndGetCount(
     return { authorized: false, questionCount: 0 }
   }
   
-  // AI 질문 수 조회
+  // 사용자 답변 수 조회 (무료 제한 체크용 - 사용자 관점에서 직관적)
   const { count } = await supabase
     .from('messages')
     .select('*', { count: 'exact', head: true })
     .eq('session_id', sessionId)
-    .eq('role', 'ai')
+    .eq('role', 'user')
     .is('deleted_at', null)
   
   return { authorized: true, questionCount: count || 0 }

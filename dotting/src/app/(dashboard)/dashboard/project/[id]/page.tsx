@@ -193,10 +193,10 @@ export default function ProjectPage() {
     if (messagesData) {
       setMessages(messagesData)
       
-      // AI 질문 수 계산 (무료 제한 체크용)
-      const aiMessageCount = messagesData.filter(m => m.role === 'ai').length
-      setFreeQuestionsUsed(aiMessageCount)
-      setFreeLimitReached(aiMessageCount >= FREE_QUESTIONS_LIMIT)
+      // 사용자 답변 수 계산 (무료 제한 체크용) - 사용자 입장에서 직관적
+      const userMessageCount = messagesData.filter(m => m.role === 'user').length
+      setFreeQuestionsUsed(userMessageCount)
+      setFreeLimitReached(userMessageCount >= FREE_QUESTIONS_LIMIT)
     }
 
     // 메시지가 없으면 첫 질문 생성
@@ -813,7 +813,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
         <div className="mb-6 p-4 bg-white rounded-xl border border-[var(--dotting-border)]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-[var(--dotting-deep-navy)]">
-              이야기 수집 중
+              답변 모으는 중
             </span>
             <span className="text-sm text-[var(--dotting-muted-gray)]">
               {freeQuestionsUsed} / {FREE_QUESTIONS_LIMIT}
@@ -881,8 +881,12 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
           {generating && messages.length === 0 && (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="w-12 h-12 border-4 border-[var(--dotting-warm-gold)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-[var(--dotting-muted-text)]">첫 질문을 준비하고 있어요...</p>
+                <span className="dotting-dots dotting-dots--loading dotting-dots--lg flex justify-center mb-4">
+                  <span className="dotting-dot" />
+                  <span className="dotting-dot" />
+                  <span className="dotting-dot" />
+                </span>
+                <p className="text-[var(--dotting-muted-gray)]">첫 질문을 준비하고 있어요</p>
               </div>
             </div>
           )}
@@ -941,7 +945,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
                       {/* 마지막 AI 질문 아래: 답변 가이드 힌트 */}
                       {isLastAiMessage && !generating && (
                         <div className="mt-3 p-3 bg-[#FEFCF8] rounded-lg border border-[#F0EBE0] max-w-full">
-                          <p className="text-xs text-[#8B7355] font-medium mb-1.5">💡 이런 내용을 떠올려보세요</p>
+                          <p className="text-xs text-[#8B7355] font-medium mb-1.5">이런 내용을 떠올려보세요</p>
                           <div className="text-xs text-[#A89880] space-y-1">
                             <p>• <span className="text-[#8B7355]">장소와 풍경</span> — 그때 어디에 있었나요?</p>
                             <p>• <span className="text-[#8B7355]">함께한 사람</span> — 누구와 함께였나요?</p>
@@ -971,7 +975,14 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
                           {consecutiveFallbacks >= 3 ? (
                             <span className="text-amber-500">잠시 후 다시 시도해주세요</span>
                           ) : retryingQuestion ? (
-                            <span>다시 만드는 중...</span>
+                            <span className="flex items-center gap-1">
+                              다시 만드는 중
+                              <span className="dotting-dots dotting-dots--loading dotting-dots--sm inline-flex">
+                                <span className="dotting-dot" />
+                                <span className="dotting-dot" />
+                                <span className="dotting-dot" />
+                              </span>
+                            </span>
                           ) : (
                             <>
                               <span>↻</span>
@@ -990,7 +1001,14 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
           {generating && (
             <div className="flex justify-start">
               <div className="bg-[var(--dotting-soft-cream)] text-[var(--dotting-deep-navy)] p-4 rounded-2xl rounded-bl-md border border-[var(--dotting-border)]">
-                <p className="text-sm">질문을 생각하고 있어요 ●●●</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">질문을 생각하고 있어요</span>
+                  <span className="dotting-dots dotting-dots--loading dotting-dots--sm">
+                    <span className="dotting-dot" />
+                    <span className="dotting-dot" />
+                    <span className="dotting-dot" />
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -1010,7 +1028,16 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
                   className="text-sm text-[var(--dotting-warm-brown)] hover:text-[var(--dotting-deep-navy)] flex items-center gap-1"
                 >
                   <span>↻</span>
-                  {retryingQuestion ? '다시 만드는 중...' : '다른 질문 받기'}
+                  {retryingQuestion ? (
+                    <span className="flex items-center gap-1">
+                      다시 만드는 중
+                      <span className="dotting-dots dotting-dots--loading dotting-dots--sm inline-flex">
+                        <span className="dotting-dot" />
+                        <span className="dotting-dot" />
+                        <span className="dotting-dot" />
+                      </span>
+                    </span>
+                  ) : '다른 질문 받기'}
                 </button>
               )}
             </div>
