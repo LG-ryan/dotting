@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { User } from '@supabase/supabase-js'
+import { LogoLink } from '@/components/ui/logo-link'
 
 /**
  * 사용자 정보 조회 + public.users 자동 생성 (OAuth/매직링크 대응)
@@ -74,7 +75,7 @@ export default async function DashboardLayout({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <span className="text-xl font-bold text-slate-900">DOTTING</span>
+              <LogoLink />
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-slate-600">{user.email}</span>
