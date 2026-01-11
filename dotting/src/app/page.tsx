@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -42,141 +43,166 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FDF8F3' }}>
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b" style={{ borderColor: '#E8E0D8' }}>
+    <div className="min-h-screen bg-[var(--dotting-soft-cream)]">
+      {/* Navigation - 조용한 럭셔리 */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-[var(--dotting-border)]">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold tracking-tight" style={{ color: '#1E3A5F' }}>DOTTING</span>
-            <span className="text-lg" style={{ color: '#D4A574' }}>●●●</span>
-          </div>
-          <Link
-            href="/login"
-            className="px-5 py-2 text-sm font-medium transition-colors hover:opacity-80"
-            style={{ color: '#1E3A5F' }}
-          >
-            로그인
+          {/* 로고 - 워드마크만 */}
+          <Link href="/" className="text-2xl font-bold tracking-tight text-[var(--dotting-deep-navy)]">
+            DOTTING
+          </Link>
+          <Link href="/login">
+            <Button variant="ghost" size="sm">로그인</Button>
           </Link>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-28 pb-16 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* 텍스트 영역 */}
-            <div className="text-center lg:text-left">
-              <p className="font-medium mb-4 tracking-wide" style={{ color: '#D4A574' }}>
+      {/* Hero Section - "조용한 럭셔리 + 책의 질감" */}
+      <section className="pt-32 pb-20 px-6 min-h-[90vh] flex items-center">
+        <div className="max-w-6xl mx-auto w-full">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* 텍스트 영역 - 더 여유있는 레이아웃 */}
+            <div className="text-center lg:text-left max-w-xl mx-auto lg:mx-0">
+              {/* 시그니처 */}
+              <p className="text-sm font-medium tracking-widest text-[var(--dotting-warm-amber)] mb-6">
                 모든 이야기는 계속된다 ●●●
               </p>
-              <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6" style={{ color: '#1E3A5F' }}>
-                소중한 이야기가<br />
-                <span style={{ color: '#D4A574' }}>책</span>이 됩니다
+              
+              {/* 메인 헤드라인 - Serif 느낌 */}
+              <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-bold leading-[1.2] mb-8 text-[var(--dotting-deep-navy)]">
+                부모님의 이야기를<br />
+                <span className="relative inline-block">
+                  <span className="relative z-10">한 권의 책</span>
+                  <span 
+                    className="absolute bottom-1 left-0 w-full h-3 -z-0 opacity-30"
+                    style={{ backgroundColor: 'var(--dotting-warm-amber)' }}
+                  />
+                </span>
+                으로
           </h1>
-              <p className="text-lg md:text-xl mb-4 leading-relaxed" style={{ color: '#5A6978' }}>
-                부모님, 나 자신, 반려동물, 떠나보낸 분...<br />
-                잊히지 않아야 할 이야기를 책으로 엮어드립니다.
+              
+              {/* 서브카피 - 간결하게 */}
+              <p className="text-lg md:text-xl leading-relaxed text-[var(--dotting-muted-gray)] mb-10" style={{ lineHeight: '1.7' }}>
+                AI가 인터뷰하고, 편집하고,<br className="hidden sm:block" />
+                아름다운 책으로 완성해드려요.
               </p>
-              <p className="text-base mb-8 font-medium" style={{ color: '#1E3A5F' }}>
-                선물이 전해지는 순간까지, 끝까지 책임집니다.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link
-                  href="/signup"
-                  className="px-8 py-4 font-semibold rounded-full transition-all hover:opacity-90 shadow-lg"
-                  style={{ backgroundColor: '#D4A574', color: '#1E3A5F' }}
-                >
-                  책 만들기 시작
+              
+              {/* CTA 영역 */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-6">
+                <Link href="/signup">
+                  <Button size="xl" className="w-full sm:w-auto">
+                    지금 시작하기
+                  </Button>
                 </Link>
-                <a
-                  href="#sample"
-                  className="px-8 py-4 font-semibold rounded-full border-2 transition-colors hover:bg-white/50"
-                  style={{ color: '#1E3A5F', borderColor: '#1E3A5F' }}
-                >
-                  샘플 책 보기
+                <a href="#sample">
+                  <Button variant="secondary" size="xl" className="w-full sm:w-auto">
+                    샘플 책 보기
+                  </Button>
                 </a>
               </div>
-              <p className="mt-4 text-sm" style={{ color: '#8B6F47' }}>
-                프로젝트 생성은 무료예요. 결제 후 링크를 보내면 책 제작이 시작됩니다.
+              
+              {/* 안심 메시지 */}
+              <p className="text-sm text-[var(--dotting-muted-gray)]">
+                무료로 시작하세요 · 완성될 때까지 결제 없음
               </p>
             </div>
             
-            {/* 책 이미지 영역 */}
+            {/* 책 목업 영역 - 미니멀 2.5D 스타일 */}
             <div className="relative flex justify-center lg:justify-end">
-              {/* 메인 책 이미지 */}
               <div className="relative">
-                {/* 책 그림자 */}
+                {/* 부드러운 배경 글로우 */}
                 <div 
-                  className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[80%] h-8 rounded-full blur-2xl"
-                  style={{ backgroundColor: 'rgba(30, 58, 95, 0.15)' }}
+                  className="absolute inset-0 -m-8 rounded-3xl opacity-30"
+                  style={{ 
+                    background: 'radial-gradient(circle at 50% 50%, var(--dotting-warm-amber) 0%, transparent 70%)',
+                    filter: 'blur(40px)',
+                  }}
                 />
                 
-                {/* 3D 책 목업 */}
-                <div className="relative" style={{ perspective: '1000px' }}>
+                {/* 책 목업 컨테이너 */}
+                <div className="relative" style={{ perspective: '1200px' }}>
+                  {/* 메인 책 */}
                   <div 
-                    className="relative w-64 h-80 md:w-72 md:h-96 rounded-r-lg shadow-2xl"
+                    className="relative w-64 h-[340px] md:w-72 md:h-[380px] rounded-r-lg dotting-book-shadow"
                     style={{ 
-                      transform: 'rotateY(-15deg)',
+                      transform: 'rotateY(-12deg) rotateX(2deg)',
                       transformStyle: 'preserve-3d',
-                      background: 'linear-gradient(135deg, #F5E6D3 0%, #E8D5C4 100%)',
                     }}
                   >
                     {/* 책 표지 */}
                     <div 
-                      className="absolute inset-0 rounded-r-lg p-8 flex flex-col justify-between"
+                      className="absolute inset-0 rounded-r-lg p-8 flex flex-col justify-between overflow-hidden"
                       style={{ 
-                        background: 'linear-gradient(145deg, #1E3A5F 0%, #2A4A6F 100%)',
-                        boxShadow: 'inset 0 0 30px rgba(0,0,0,0.2)',
+                        background: 'linear-gradient(145deg, #1A365D 0%, #2D4A6F 100%)',
                       }}
                     >
-                      <div>
-                        <p className="text-xs tracking-widest mb-2" style={{ color: '#D4A574' }}>DOTTING ●●●</p>
-                        <h3 className="text-xl md:text-2xl font-serif text-white leading-tight">
-                          아버지의<br />
+                      {/* 미묘한 텍스처 오버레이 */}
+                      <div 
+                        className="absolute inset-0 opacity-[0.03]"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+                        }}
+                      />
+                      
+                      <div className="relative z-10">
+                        <p className="text-xs tracking-[0.2em] mb-4 text-[var(--dotting-warm-amber)] font-medium">
+                          DOTTING
+                        </p>
+                        <h3 className="text-2xl md:text-[1.75rem] dotting-serif text-white leading-tight font-medium">
+                          엄마의<br />
                           이야기
                         </h3>
                       </div>
-                      <div>
-                        <div className="w-16 h-0.5 mb-3" style={{ backgroundColor: '#D4A574' }} />
-                        <p className="text-sm text-white/70">2024</p>
+                      
+                      <div className="relative z-10">
+                        <div className="w-12 h-[1px] mb-4 bg-[var(--dotting-warm-amber)]/60" />
+                        <p className="text-sm text-white/50 tracking-wide">2026</p>
                       </div>
                     </div>
                     
-                    {/* 책 등 */}
+                    {/* 책 등 (페이지 두께) */}
                     <div 
-                      className="absolute left-0 top-0 w-4 h-full rounded-l-sm"
+                      className="absolute left-0 top-0 w-4 h-full"
                       style={{ 
-                        background: 'linear-gradient(90deg, #15304D 0%, #1E3A5F 100%)',
+                        background: 'linear-gradient(90deg, #F5F0E8 0%, #E8E0D8 50%, #1A365D 100%)',
                         transform: 'translateX(-100%) rotateY(90deg)',
                         transformOrigin: 'right center',
                       }}
                     />
                   </div>
-                </div>
-                
-                {/* 내지 미리보기 (겹쳐진 페이지) */}
-                <div 
-                  className="absolute -right-8 top-8 w-48 h-64 md:w-56 md:h-72 bg-white rounded shadow-lg p-4 hidden md:block"
-                  style={{ 
-                    transform: 'rotate(6deg)',
-                    border: '1px solid #E8E0D8',
-                  }}
-                >
-                  <p className="text-xs mb-2" style={{ color: '#D4A574' }}>Chapter 1</p>
-                  <p className="text-sm font-serif leading-relaxed" style={{ color: '#1E3A5F' }}>
-                    "아버지는 늘 새벽에 일어나셨다. 
-                    아직 해가 뜨기 전, 
-                    고요한 부엌에서 
-                    커피 향이 퍼져나가면..."
-                  </p>
-                  <div className="absolute bottom-4 right-4 text-xs" style={{ color: '#8B6F47' }}>
-                    12 / 156
+                  
+                  {/* 내지 프리뷰 - 더 세련되게 */}
+                  <div 
+                    className="absolute -right-6 top-10 w-52 h-64 md:w-60 md:h-72 bg-white rounded-sm shadow-xl p-6 hidden md:block"
+                    style={{ 
+                      transform: 'rotate(5deg) translateZ(-10px)',
+                      border: '1px solid rgba(0,0,0,0.06)',
+                    }}
+                  >
+                    {/* 페이지 헤더 */}
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+                      <p className="text-[10px] tracking-widest text-[var(--dotting-warm-amber)] uppercase">Chapter 1</p>
+                      <p className="text-[10px] text-gray-300">12</p>
+                    </div>
+                    
+                    {/* 챕터 타이틀 */}
+                    <h4 className="dotting-serif text-base text-[var(--dotting-deep-navy)] mb-3 font-medium">
+                      어린 시절
+                    </h4>
+                    
+                    {/* 본문 미리보기 */}
+                    <p className="text-[13px] leading-[1.8] text-[var(--dotting-muted-gray)]" style={{ fontFamily: 'var(--font-sans)' }}>
+                      "아버지는 늘 새벽에 일어나셨다. 
+                      아직 해가 뜨기 전, 
+                      고요한 부엌에서 
+                      커피 향이..."
+                    </p>
                   </div>
                 </div>
                 
                 {/* 샘플 이미지 표기 */}
-                <p className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs whitespace-nowrap" style={{ color: '#B0B8C0' }}>
-                  *샘플 이미지입니다
+                <p className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[11px] whitespace-nowrap text-gray-400">
+                  샘플 이미지
                 </p>
               </div>
             </div>
@@ -184,47 +210,57 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Story Types */}
-      <section className="py-12 bg-white border-y" style={{ borderColor: '#E8E0D8' }}>
+      {/* Story Types - 더 미니멀하게 */}
+      <section className="py-12 bg-white border-y border-[var(--dotting-border)]">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+          <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
             {storyTypes.map((type, index) => (
-              <div key={index} className="text-center">
-                <p className="font-medium" style={{ color: '#1E3A5F' }}>{type.label}</p>
-                <p className="text-sm" style={{ color: '#8B6F47' }}>{type.desc}</p>
+              <div key={index} className="text-center group cursor-default">
+                <p className="font-medium text-[var(--dotting-deep-navy)] group-hover:text-[var(--dotting-warm-amber)] transition-colors">
+                  {type.label}
+                </p>
+                <p className="text-sm text-[var(--dotting-muted-gray)]">{type.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-20 px-6" style={{ backgroundColor: '#FDF8F3' }}>
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4" style={{ color: '#1E3A5F' }}>
-            이렇게 만들어집니다
-          </h2>
-          <p className="text-center mb-16 max-w-xl mx-auto" style={{ color: '#5A6978' }}>
-            복잡한 건 저희가 다 합니다. 이야기만 들려주세요.
-          </p>
+      {/* How It Works - 더 여유있는 레이아웃 */}
+      <section className="py-24 px-6 bg-[var(--dotting-soft-cream)]">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-sm font-medium tracking-widest text-[var(--dotting-warm-amber)] mb-4">
+              PROCESS
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold text-[var(--dotting-deep-navy)] mb-4">
+              이렇게 만들어집니다
+            </h2>
+            <p className="text-[var(--dotting-muted-gray)] max-w-md mx-auto" style={{ lineHeight: '1.7' }}>
+              복잡한 건 저희가 다 합니다.<br />이야기만 들려주세요.
+            </p>
+          </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-12">
             {[
-              { step: '1', title: '프로젝트 시작', desc: '누구의 이야기인지 선택하고, 링크를 생성하세요. 함께 진행하셔도 좋아요.' },
-              { step: '2', title: '대화하기', desc: '자연스러운 질문에 음성이나 텍스트로 편하게 답해주세요. 대화가 이야기가 됩니다.' },
-              { step: '3', title: '책 완성', desc: '이야기가 자동으로 정리되어 아름다운 책이 됩니다. 검토하고 수정도 가능해요.' },
-            ].map((item) => (
-              <div key={item.step} className="text-center">
+              { step: '1', title: '프로젝트 시작', desc: '누구의 이야기인지 선택하고, 링크를 생성하세요.' },
+              { step: '2', title: '대화하기', desc: '자연스러운 질문에 편하게 답해주세요. 대화가 이야기가 됩니다.' },
+              { step: '3', title: '책 완성', desc: '이야기가 자동으로 정리되어 아름다운 책이 됩니다.' },
+            ].map((item, index) => (
+              <div key={item.step} className="text-center relative">
+                {/* 연결선 */}
+                {index < 2 && (
+                  <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-[1px] bg-[var(--dotting-border)]" />
+                )}
                 <div 
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-                  style={{ backgroundColor: 'rgba(212, 165, 116, 0.15)' }}
+                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 relative z-10 bg-white border-2 border-[var(--dotting-warm-amber)]"
                 >
-                  <span className="text-2xl font-bold" style={{ color: '#D4A574' }}>{item.step}</span>
+                  <span className="text-xl font-bold text-[var(--dotting-warm-amber)]">{item.step}</span>
                 </div>
-                <h3 className="text-xl font-semibold mb-3" style={{ color: '#1E3A5F' }}>
+                <h3 className="text-lg font-semibold mb-3 text-[var(--dotting-deep-navy)]">
                   {item.title}
                 </h3>
-                <p className="leading-relaxed" style={{ color: '#5A6978' }}>
+                <p className="text-[var(--dotting-muted-gray)] text-sm leading-relaxed max-w-[200px] mx-auto">
                   {item.desc}
                 </p>
               </div>
@@ -551,42 +587,60 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-20 px-6" style={{ backgroundColor: '#1E3A5F' }}>
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+      {/* Final CTA - 더 임팩트 있게 */}
+      <section className="py-24 px-6 bg-[var(--dotting-deep-navy)] relative overflow-hidden">
+        {/* 배경 패턴 */}
+        <div 
+          className="absolute inset-0 opacity-5"
+          style={{
+            backgroundImage: `radial-gradient(circle at 20% 80%, var(--dotting-warm-amber) 0%, transparent 50%),
+                             radial-gradient(circle at 80% 20%, var(--dotting-warm-amber) 0%, transparent 50%)`,
+          }}
+        />
+        
+        <div className="max-w-3xl mx-auto text-center relative z-10">
+          <p className="text-sm font-medium tracking-widest text-[var(--dotting-warm-amber)] mb-6">
+            ●●●
+          </p>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
             소중한 이야기,<br />지금 시작하세요
           </h2>
-          <p className="mb-8 text-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            모든 이야기는 계속된다 ●●●
+          <p className="mb-10 text-lg text-white/60">
+            모든 이야기는 계속된다
           </p>
-          <Link
-            href="/signup"
-            className="inline-block px-10 py-4 font-semibold rounded-full transition-all hover:opacity-90 shadow-lg"
-            style={{ backgroundColor: '#D4A574', color: '#1E3A5F' }}
-          >
-            책 만들기 시작
+          <Link href="/signup">
+            <Button variant="celebration" size="xl" className="shadow-2xl">
+              지금 시작하기
+            </Button>
           </Link>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-6" style={{ backgroundColor: '#162D4A' }}>
+      {/* Footer - 조용한 럭셔리 + ●●● 시그니처 */}
+      <footer className="py-12 px-6 bg-[#0F1F2E]">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-white">DOTTING</span>
-              <span style={{ color: '#D4A574' }}>●●●</span>
-            </div>
-            <div className="flex gap-6 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
+            {/* 로고 - 워드마크만 (●●● 분리) */}
+            <Link href="/" className="text-xl font-bold text-white tracking-wide">
+              DOTTING
+            </Link>
+            <div className="flex gap-6 text-sm text-white/50">
               <a href="#" className="hover:text-white transition-colors">이용약관</a>
               <a href="#" className="hover:text-white transition-colors">개인정보처리방침</a>
               <a href="#" className="hover:text-white transition-colors">문의하기</a>
             </div>
           </div>
-          <div className="mt-8 pt-8 text-center text-sm" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}>
-            <p>© 2026 DOTTING. All rights reserved.</p>
-            <p className="mt-2">모든 이야기는 계속된다</p>
+          
+          {/* 시그니처 영역 */}
+          <div className="mt-8 pt-8 text-center border-t border-white/10">
+            {/* ●●● 시그니처 */}
+            <div className="flex justify-center gap-1.5 mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--dotting-warm-amber)]/60" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--dotting-warm-amber)]/60" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--dotting-warm-amber)]/60" />
+            </div>
+            <p className="text-sm text-white/40 mb-1">모든 이야기는 계속된다</p>
+            <p className="text-xs text-white/30">© 2026 DOTTING. All rights reserved.</p>
           </div>
         </div>
       </footer>

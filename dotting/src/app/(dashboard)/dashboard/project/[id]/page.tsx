@@ -732,8 +732,13 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-slate-600">로딩 중...</div>
+      <div className="flex flex-col items-center justify-center h-96">
+        <div className="dotting-dots dotting-dots--loading dotting-dots--lg mb-4">
+          <span className="dotting-dot" />
+          <span className="dotting-dot" />
+          <span className="dotting-dot" />
+        </div>
+        <p className="text-[var(--dotting-muted-gray)]">이야기를 불러오고 있어요</p>
       </div>
     )
   }
@@ -803,44 +808,65 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
         />
       )}
 
-      {/* 무료 질문 잔여 횟수 표시 (결제 전에만) */}
+      {/* 진행률 표시 (결제 전에만) */}
       {!isPaidSession && !freeLimitReached && (
-        <div className="mb-4 flex items-center justify-between text-sm">
-          <span className="text-[var(--dotting-muted-text)]">
-            💬 질문 {freeQuestionsUsed}/{FREE_QUESTIONS_LIMIT}개 사용
-          </span>
-          {freeQuestionsUsed >= FREE_QUESTIONS_LIMIT - 3 && (
-            <span className="text-amber-600 text-xs">
-              곧 무료 질문이 끝나요
+        <div className="mb-6 p-4 bg-white rounded-xl border border-[var(--dotting-border)]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-[var(--dotting-deep-navy)]">
+              이야기 수집 중
             </span>
-          )}
+            <span className="text-sm text-[var(--dotting-muted-gray)]">
+              {freeQuestionsUsed} / {FREE_QUESTIONS_LIMIT}
+            </span>
+          </div>
+          
+          {/* 진행률 바 */}
+          <div className="dotting-progress-track mb-2">
+            <div 
+              className="dotting-progress-fill"
+              style={{ width: `${(freeQuestionsUsed / FREE_QUESTIONS_LIMIT) * 100}%` }}
+            />
+          </div>
+          
+          {/* 안내 메시지 */}
+          <p className="text-xs text-[var(--dotting-muted-gray)]">
+            {freeQuestionsUsed >= FREE_QUESTIONS_LIMIT - 3 
+              ? `${FREE_QUESTIONS_LIMIT - freeQuestionsUsed}개만 더 답변하면 책으로 완성할 수 있어요!`
+              : freeQuestionsUsed >= 3
+              ? '좋은 이야기가 쌓이고 있어요'
+              : '천천히 이야기를 들려주세요'
+            }
+          </p>
         </div>
       )}
 
-      {/* 무료 제한 초과 안내 - 축하 스타일 */}
+      {/* 무료 제한 초과 안내 - 조용한 럭셔리 스타일 */}
       {freeLimitReached && !isPaidSession && (
-        <Card className="mb-4 p-6 bg-gradient-to-r from-amber-50 via-orange-50 to-rose-50 border-amber-200 shadow-lg">
+        <Card className="mb-6 p-6 bg-white border-[var(--dotting-warm-amber)]/30">
           <div className="text-center">
-            <div className="text-4xl mb-3">🎉</div>
-            <h3 className="text-lg font-bold text-amber-800 mb-2">
-              {freeQuestionsUsed}개의 소중한 이야기가 모였어요!
+            {/* ●●● 완성 시그니처 */}
+            <div className="flex justify-center gap-1.5 mb-4">
+              <span className="w-2 h-2 rounded-full bg-[var(--dotting-warm-amber)]" />
+              <span className="w-2 h-2 rounded-full bg-[var(--dotting-warm-amber)]" />
+              <span className="w-2 h-2 rounded-full bg-[var(--dotting-warm-amber)]" />
+            </div>
+            <h3 className="text-lg font-bold text-[var(--dotting-deep-navy)] mb-2">
+              {freeQuestionsUsed}개의 이야기가 모였어요
             </h3>
-            <p className="text-amber-700/80 mb-4">
-              이제 책으로 완성할 준비가 됐어요
+            <p className="text-[var(--dotting-muted-gray)] mb-5">
+              책으로 완성할 준비가 됐어요
             </p>
             <div className="flex gap-3 justify-center">
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={() => setShowPreviewModal(true)}
-                className="text-sm border-amber-300 hover:bg-amber-50"
               >
-                👀 미리보기
+                미리보기
               </Button>
               <Button
                 onClick={() => setShowCelebrationModal(true)}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md"
               >
-                📖 책으로 완성하기
+                책으로 완성하기
               </Button>
             </div>
           </div>
@@ -996,16 +1022,15 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
         {/* 입력 영역 */}
         <div className="border-t border-[var(--dotting-border)] p-4">
           {freeLimitReached && !isPaidSession ? (
-            // 무료 제한 초과 시 - 성취감 있는 메시지
-            <div className="text-center py-4 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-lg">
-              <p className="text-amber-700 text-sm mb-3">
-                ✨ 이야기가 충분히 모였어요! 이제 책으로 완성해보세요
+            // 무료 제한 초과 시 - 조용한 럭셔리 스타일
+            <div className="text-center py-4">
+              <p className="text-[var(--dotting-muted-gray)] text-sm mb-3">
+                이야기가 충분히 모였어요. 이제 책으로 완성해보세요.
               </p>
               <Button
                 onClick={() => setShowCelebrationModal(true)}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
               >
-                📖 책으로 완성하기
+                책으로 완성하기
               </Button>
             </div>
           ) : (

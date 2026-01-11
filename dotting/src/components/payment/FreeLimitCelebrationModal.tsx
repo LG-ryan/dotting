@@ -1,8 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { FREE_QUESTIONS_LIMIT } from '@/lib/free-tier-limits'
 
 interface FreeLimitCelebrationModalProps {
   isOpen: boolean
@@ -19,85 +17,70 @@ export function FreeLimitCelebrationModal({
   subjectName,
   questionCount,
 }: FreeLimitCelebrationModalProps) {
-  const [showConfetti, setShowConfetti] = useState(false)
-
-  useEffect(() => {
-    if (isOpen) {
-      // 모달 열릴 때 confetti 효과
-      setShowConfetti(true)
-      const timer = setTimeout(() => setShowConfetti(false), 3000)
-      return () => clearTimeout(timer)
-    }
-  }, [isOpen])
-
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* 배경 오버레이 */}
       <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
       />
       
-      {/* 모달 컨텐츠 */}
+      {/* 모달 컨텐츠 - 조용한 럭셔리 스타일 */}
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-300">
         {/* X 닫기 버튼 */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors"
+          className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full text-[var(--dotting-muted-gray)] hover:text-[var(--dotting-deep-navy)] hover:bg-gray-100 transition-colors"
           aria-label="닫기"
         >
-          ✕
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
         
-        {/* 상단 그라데이션 헤더 */}
-        <div className="bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 p-8 text-center relative overflow-hidden">
-          {/* 장식 원들 */}
-          <div className="absolute top-4 left-4 w-8 h-8 bg-white/20 rounded-full" />
-          <div className="absolute top-12 right-8 w-4 h-4 bg-white/30 rounded-full" />
-          <div className="absolute bottom-6 left-12 w-6 h-6 bg-white/20 rounded-full" />
-          
-          {/* 축하 아이콘 */}
-          <div className="text-6xl mb-4">
-            {showConfetti ? '🎉' : '📖'}
+        {/* 상단 - 미니멀 헤더 */}
+        <div className="pt-12 pb-8 px-8 text-center border-b border-[var(--dotting-border)]">
+          {/* ●●● 완성 시그니처 */}
+          <div className="flex justify-center gap-2 mb-6">
+            <span className="w-3 h-3 rounded-full bg-[var(--dotting-warm-amber)]" />
+            <span className="w-3 h-3 rounded-full bg-[var(--dotting-warm-amber)]" />
+            <span className="w-3 h-3 rounded-full bg-[var(--dotting-warm-amber)]" />
           </div>
           
-          <h2 className="text-2xl font-bold text-white mb-2">
-            축하해요!
+          <h2 className="text-2xl font-bold text-[var(--dotting-deep-navy)] mb-3">
+            {questionCount}개의 이야기가 모였어요
           </h2>
-          <p className="text-white/90 text-lg">
-            {subjectName}님의 이야기가<br />
-            <span className="font-semibold">{questionCount}개</span> 모였어요
+          <p className="text-[var(--dotting-muted-gray)]">
+            {subjectName}님의 소중한 추억들이<br />
+            책이 될 준비를 마쳤어요
           </p>
         </div>
 
-        {/* 본문 */}
-        <div className="p-6 text-center">
-          <p className="text-gray-700 mb-2 text-lg leading-relaxed">
-            소중한 추억들이 책이 될 준비를 마쳤어요.
-          </p>
-          <p className="text-gray-500 text-sm mb-6">
-            지금 바로 미리보기로 확인해보세요!
-          </p>
-
-          {/* 미리보기 안내 */}
-          <div className="bg-gray-50 rounded-xl p-4 mb-6">
-            <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
-              <div className="flex flex-col items-center">
-                <span className="text-2xl mb-1">👀</span>
-                <span>미리보기</span>
+        {/* 본문 - 간결하게 */}
+        <div className="p-8">
+          {/* 단계 안내 - 미니멀 아이콘 */}
+          <div className="flex items-center justify-center gap-6 mb-8">
+            <div className="flex flex-col items-center text-[var(--dotting-muted-gray)]">
+              <div className="w-10 h-10 rounded-full border-2 border-current flex items-center justify-center mb-2">
+                <span className="text-sm font-medium">1</span>
               </div>
-              <span className="text-gray-300">→</span>
-              <div className="flex flex-col items-center">
-                <span className="text-2xl mb-1">✏️</span>
-                <span>수정하기</span>
+              <span className="text-xs">미리보기</span>
+            </div>
+            <div className="w-8 h-px bg-[var(--dotting-border)]" />
+            <div className="flex flex-col items-center text-[var(--dotting-muted-gray)]">
+              <div className="w-10 h-10 rounded-full border-2 border-current flex items-center justify-center mb-2">
+                <span className="text-sm font-medium">2</span>
               </div>
-              <span className="text-gray-300">→</span>
-              <div className="flex flex-col items-center">
-                <span className="text-2xl mb-1">📚</span>
-                <span>책 완성</span>
+              <span className="text-xs">수정</span>
+            </div>
+            <div className="w-8 h-px bg-[var(--dotting-border)]" />
+            <div className="flex flex-col items-center text-[var(--dotting-muted-gray)]">
+              <div className="w-10 h-10 rounded-full border-2 border-current flex items-center justify-center mb-2">
+                <span className="text-sm font-medium">3</span>
               </div>
+              <span className="text-xs">완성</span>
             </div>
           </div>
 
@@ -105,24 +88,25 @@ export function FreeLimitCelebrationModal({
           <div className="space-y-3">
             <Button
               onClick={onProceedToPayment}
-              className="w-full py-6 text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all"
+              size="xl"
+              className="w-full"
             >
-              📖 책으로 완성하기
+              책으로 완성하기
             </Button>
             
             <button
               onClick={onClose}
-              className="w-full py-3 text-gray-500 hover:text-gray-700 text-sm transition-colors"
+              className="w-full py-3 text-[var(--dotting-muted-gray)] hover:text-[var(--dotting-deep-navy)] text-sm transition-colors"
             >
               나중에 할게요
             </button>
           </div>
         </div>
 
-        {/* 하단 안내 */}
-        <div className="border-t border-gray-100 px-6 py-4 bg-gray-50">
-          <p className="text-xs text-gray-400 text-center">
-            모인 이야기는 저장되어 있어요. 언제든 돌아와서 책으로 완성할 수 있어요.
+        {/* 하단 안내 - 시그니처 포함 */}
+        <div className="border-t border-[var(--dotting-border)] px-6 py-4 bg-[var(--dotting-soft-cream)]">
+          <p className="text-xs text-[var(--dotting-muted-gray)] text-center">
+            모인 이야기는 저장되어 있어요 · 언제든 돌아올 수 있어요
           </p>
         </div>
       </div>

@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { PaymentModal } from '@/components/payment/PaymentModal'
 import type { OrderPaymentStatus } from '@/types/database'
 import { PAID_ORDER_STATUSES } from '@/lib/free-tier-limits'
@@ -40,6 +39,7 @@ export default function PreviewPage() {
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [currentChapter, setCurrentChapter] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [showCover, setShowCover] = useState(true) // 표지 보기 상태
   
   // 결제 관련 상태
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -81,7 +81,6 @@ export default function PreviewPage() {
     
     if (orderData) {
       setOrderStatus(orderData.status as OrderPaymentStatus)
-      // 결제 완료 상태 확인 (단일 소스 상수 사용)
       setIsPaidSession(PAID_ORDER_STATUSES.includes(orderData.status as typeof PAID_ORDER_STATUSES[number]))
     }
 
@@ -116,213 +115,298 @@ export default function PreviewPage() {
   const goToChapter = (index: number) => {
     if (index >= 0 && index < chapters.length) {
       setCurrentChapter(index)
+      setShowCover(false)
     }
   }
 
+  // 로딩 상태 - ●○○ 애니메이션
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-slate-600">로딩 중...</div>
+      <div className="flex flex-col items-center justify-center h-96">
+        <div className="dotting-dots dotting-dots--loading dotting-dots--lg mb-4">
+          <span className="dotting-dot" />
+          <span className="dotting-dot" />
+          <span className="dotting-dot" />
+        </div>
+        <p className="text-[var(--dotting-muted-gray)]">책을 준비하고 있어요</p>
       </div>
     )
   }
 
   if (!draft || chapters.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-16">
-        <h1 className="text-2xl font-bold text-slate-900 mb-4">
-          아직 정리된 이야기가 없습니다
+      <div className="max-w-lg mx-auto text-center py-16">
+        <div className="flex justify-center gap-1.5 mb-6">
+          <span className="w-2 h-2 rounded-full bg-[var(--dotting-border)]" />
+          <span className="w-2 h-2 rounded-full bg-[var(--dotting-border)]" />
+          <span className="w-2 h-2 rounded-full bg-[var(--dotting-border)]" />
+        </div>
+        <h1 className="text-xl font-bold text-[var(--dotting-deep-navy)] mb-3">
+          아직 정리된 이야기가 없어요
         </h1>
-        <p className="text-slate-600 mb-8">
+        <p className="text-[var(--dotting-muted-gray)] mb-8">
           인터뷰를 더 진행하고 이야기를 정리해보세요
         </p>
         <Link href={`/dashboard/project/${sessionId}`}>
-          <Button className="bg-slate-900 hover:bg-slate-800">
-            인터뷰로 돌아가기
-          </Button>
+          <Button>인터뷰로 돌아가기</Button>
         </Link>
       </div>
     )
   }
 
   const chapter = chapters[currentChapter]
+  const currentYear = new Date().getFullYear()
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* 헤더 */}
-      <div className="mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">{draft.title}</h1>
-          <p className="text-slate-600 text-sm mt-1">
-            {session?.subject_relation} · {chapters.length}개의 챕터
-          </p>
-        </div>
-        <div className="flex space-x-3">
-          <Link href={`/dashboard/project/${sessionId}`}>
-            <Button variant="outline">인터뷰 계속하기</Button>
+    <div className="min-h-screen bg-[var(--dotting-soft-cream)]">
+      {/* 상단 네비게이션 */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[var(--dotting-border)]">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link 
+            href={`/dashboard/project/${sessionId}`}
+            className="text-sm text-[var(--dotting-muted-gray)] hover:text-[var(--dotting-deep-navy)] transition-colors"
+          >
+            ← 인터뷰로 돌아가기
           </Link>
+          <div className="flex items-center gap-2 text-sm text-[var(--dotting-muted-gray)]">
+            <span>{chapters.length}개의 챕터</span>
+            <span>·</span>
+            <span>{showCover ? '표지' : `${currentChapter + 1} / ${chapters.length}`}</span>
+          </div>
         </div>
       </div>
 
-      {/* 책 미리보기 */}
-      <div className="bg-amber-50 rounded-lg shadow-lg overflow-hidden">
-        {/* 책 상단 장식 */}
-        <div className="h-2 bg-gradient-to-r from-amber-200 via-amber-100 to-amber-200" />
+      {/* 책 프리뷰 영역 - Artifact Uprising 스타일 */}
+      {/* pb-32: 하단 고정 CTA가 본문을 가리지 않도록 */}
+      <div className="max-w-2xl mx-auto px-4 py-12 pb-32 md:pb-24">
         
-        <div className="p-8 md:p-12">
-          {/* 챕터 제목 */}
-          <div className="text-center mb-8">
-            <span className="text-sm text-amber-700 font-medium">
-              Chapter {currentChapter + 1}
-            </span>
-            <h2 className="text-2xl font-serif font-bold text-slate-800 mt-2">
-              {chapter.title}
-            </h2>
-          </div>
-
-          {/* 챕터 내용 */}
-          <div className="prose prose-slate max-w-none">
-            <p className="text-lg leading-relaxed text-slate-700 whitespace-pre-wrap font-serif">
-              {chapter.content}
-            </p>
+        {/* 책 컨테이너 - 여백 속에 놓기 */}
+        <div className="relative">
+          {/* 미세한 종이 질감 오버레이 */}
+          <div 
+            className="absolute inset-0 pointer-events-none opacity-[0.02] rounded-sm"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+            }}
+          />
+          
+          {/* 책 그림자 */}
+          <div className="absolute -inset-4 bg-gradient-to-b from-transparent via-black/[0.02] to-black/[0.05] rounded-lg -z-10" />
+          
+          {/* 책 본문 */}
+          <div className="bg-white rounded-sm shadow-xl overflow-hidden">
+            
+            {showCover ? (
+              /* ========== 표지 ========== */
+              <div 
+                className="aspect-[3/4] flex flex-col items-center justify-center p-8 sm:p-12 cursor-pointer relative"
+                onClick={() => setShowCover(false)}
+                style={{
+                  background: 'linear-gradient(145deg, #1A365D 0%, #2D4A6F 100%)',
+                }}
+              >
+                {/* 표지 내용 */}
+                <div className="text-center px-4">
+                  {/* 시그니처 */}
+                  <p className="text-[10px] sm:text-xs tracking-[0.3em] text-[var(--dotting-warm-amber)] mb-6 sm:mb-8">
+                    DOTTING
+                  </p>
+                  
+                  {/* 제목 - Serif, 모바일 최적화 */}
+                  <h1 className="dotting-serif text-2xl sm:text-3xl md:text-4xl text-white font-medium leading-tight mb-4">
+                    {draft.title || `${session?.subject_name}의 이야기`}
+                  </h1>
+                  
+                  {/* 구분선 */}
+                  <div className="w-10 sm:w-12 h-px bg-[var(--dotting-warm-amber)]/50 mx-auto my-5 sm:my-6" />
+                  
+                  {/* 날짜 */}
+                  <p className="text-xs sm:text-sm text-white/50">{currentYear}</p>
+                </div>
+                
+                {/* 클릭 안내 - 모바일에서도 보이게 */}
+                <p className="absolute bottom-6 sm:bottom-8 text-[10px] sm:text-xs text-white/40">
+                  탭하여 내용 보기
+                </p>
+              </div>
+            ) : (
+              /* ========== 본문 페이지 ========== */
+              <div className="min-h-[60vh] sm:min-h-[70vh]">
+                {/* 페이지 상단 여백 */}
+                <div className="h-8 sm:h-12 border-b border-gray-100" />
+                
+                {/* 본문 영역 - 책 폭/행간 적용, 모바일 최적화 */}
+                <div className="px-5 sm:px-8 md:px-16 py-8 sm:py-12">
+                  {/* 챕터 헤더 */}
+                  <div className="text-center mb-8 sm:mb-12">
+                    <p className="text-[10px] sm:text-xs tracking-[0.2em] text-[var(--dotting-warm-amber)] uppercase mb-2 sm:mb-3">
+                      Chapter {currentChapter + 1}
+                    </p>
+                    <h2 className="dotting-serif text-xl sm:text-2xl md:text-3xl text-[var(--dotting-deep-navy)] font-medium">
+                      {chapter.title}
+                    </h2>
+                  </div>
+                  
+                  {/* 본문 - Medium 스타일 가독성, 모바일 16px 보장 */}
+                  <div 
+                    className="text-[var(--dotting-deep-navy)] whitespace-pre-wrap text-base sm:text-[17px]"
+                    style={{
+                      lineHeight: '1.8',
+                      letterSpacing: '-0.003em',
+                    }}
+                  >
+                    {chapter.content}
+                  </div>
+                </div>
+                
+                {/* 페이지 번호 */}
+                <div className="text-center py-4 sm:py-6 text-xs text-[var(--dotting-muted-gray)]">
+                  {currentChapter + 1}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* 페이지 네비게이션 */}
-        <div className="border-t border-amber-200 px-8 py-4 flex justify-between items-center bg-amber-100/50">
-          <Button
-            variant="ghost"
-            onClick={() => goToChapter(currentChapter - 1)}
-            disabled={currentChapter === 0}
-            className="text-amber-800 hover:text-amber-900 hover:bg-amber-200"
+        <div className="flex items-center justify-between mt-8">
+          <button
+            onClick={() => {
+              if (showCover) return
+              if (currentChapter === 0) {
+                setShowCover(true)
+              } else {
+                goToChapter(currentChapter - 1)
+              }
+            }}
+            disabled={showCover}
+            className="text-sm text-[var(--dotting-muted-gray)] hover:text-[var(--dotting-deep-navy)] disabled:opacity-30 transition-colors"
           >
             ← 이전
-          </Button>
+          </button>
           
-          <div className="flex space-x-2">
+          {/* 챕터 인디케이터 */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCover(true)}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                showCover ? 'bg-[var(--dotting-warm-amber)]' : 'bg-gray-300 hover:bg-gray-400'
+              }`}
+            />
             {chapters.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToChapter(index)}
                 className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentChapter
-                    ? 'bg-amber-700'
-                    : 'bg-amber-300 hover:bg-amber-400'
+                  !showCover && index === currentChapter 
+                    ? 'bg-[var(--dotting-warm-amber)]' 
+                    : 'bg-gray-300 hover:bg-gray-400'
                 }`}
               />
             ))}
           </div>
 
-          <Button
-            variant="ghost"
-            onClick={() => goToChapter(currentChapter + 1)}
-            disabled={currentChapter === chapters.length - 1}
-            className="text-amber-800 hover:text-amber-900 hover:bg-amber-200"
+          <button
+            onClick={() => goToChapter(showCover ? 0 : currentChapter + 1)}
+            disabled={!showCover && currentChapter === chapters.length - 1}
+            className="text-sm text-[var(--dotting-muted-gray)] hover:text-[var(--dotting-deep-navy)] disabled:opacity-30 transition-colors"
           >
             다음 →
-          </Button>
+          </button>
         </div>
+
+        {/* 목차 (접이식) */}
+        <details className="mt-12 group">
+          <summary className="cursor-pointer text-sm text-[var(--dotting-muted-gray)] hover:text-[var(--dotting-deep-navy)] list-none flex items-center gap-2">
+            <span>목차 보기</span>
+            <svg className="w-4 h-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </summary>
+          <div className="mt-4 space-y-1">
+            {chapters.map((ch, index) => (
+              <button
+                key={ch.id}
+                onClick={() => goToChapter(index)}
+                className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-colors ${
+                  !showCover && index === currentChapter
+                    ? 'bg-[var(--dotting-soft-cream)] text-[var(--dotting-deep-navy)] font-medium'
+                    : 'text-[var(--dotting-muted-gray)] hover:bg-gray-50'
+                }`}
+              >
+                <span className="text-xs opacity-60 mr-2">{index + 1}.</span>
+                {ch.title}
+              </button>
+            ))}
+          </div>
+        </details>
       </div>
 
-      {/* 챕터 목록 */}
-      <div className="mt-8">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">목차</h3>
-        <div className="space-y-2">
-          {chapters.map((ch, index) => (
-            <button
-              key={ch.id}
-              onClick={() => goToChapter(index)}
-              className={`w-full text-left p-4 rounded-lg transition-colors ${
-                index === currentChapter
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              <span className="text-sm opacity-70">Chapter {index + 1}</span>
-              <p className="font-medium">{ch.title}</p>
-            </button>
-          ))}
+      {/* 하단 CTA 영역 - 고정, 모바일 최적화 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--dotting-border)] shadow-lg z-50">
+        <div className="max-w-2xl mx-auto px-4 py-4 sm:py-6">
+          
+          {!isPaidSession ? (
+            /* ========== 미결제 상태 ========== */
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+              {/* 체크리스트 - 모바일에서는 숨기거나 간소화 */}
+              <div className="hidden sm:flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--dotting-muted-gray)]">
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4 text-[var(--dotting-ocean-teal)]" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  PDF
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4 text-[var(--dotting-ocean-teal)]" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  실물 책
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4 text-[var(--dotting-ocean-teal)]" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  무료 수정
+                </span>
+              </div>
+              
+              {/* 모바일: 버튼만 풀 와이드 */}
+              <Button
+                onClick={() => setShowPaymentModal(true)}
+                size="lg"
+                className="w-full sm:w-auto min-h-[48px]"
+              >
+                결제하고 완성하기
+              </Button>
+            </div>
+          ) : (
+            /* ========== 결제 완료 상태 ========== */
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center gap-2">
+                {/* ●●● 완성 시그니처 */}
+                <div className="flex gap-1">
+                  <span className="w-2 h-2 rounded-full bg-[var(--dotting-ocean-teal)]" />
+                  <span className="w-2 h-2 rounded-full bg-[var(--dotting-ocean-teal)]" />
+                  <span className="w-2 h-2 rounded-full bg-[var(--dotting-ocean-teal)]" />
+                </div>
+                <span className="text-sm text-[var(--dotting-deep-navy)] font-medium">
+                  책이 완성됐어요
+                </span>
+              </div>
+              
+              <div className="flex gap-3 w-full sm:w-auto">
+                <Button variant="secondary" className="flex-1 sm:flex-none min-h-[48px]">
+                  PDF 다운로드
+                </Button>
+                <Button className="flex-1 sm:flex-none min-h-[48px]">
+                  실물 책 주문
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* 상태 표시 */}
-      <Card className="mt-8 p-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <span className={`text-sm px-3 py-1 rounded-full ${
-              draft.status === 'draft' 
-                ? 'bg-yellow-100 text-yellow-700'
-                : draft.status === 'reviewed'
-                ? 'bg-blue-100 text-blue-700'
-                : draft.status === 'finalized'
-                ? 'bg-green-100 text-green-700'
-                : 'bg-slate-100 text-slate-700'
-            }`}>
-              {draft.status === 'draft' ? 'AI 초안' 
-                : draft.status === 'reviewed' ? '검토 완료'
-                : draft.status === 'finalized' ? '최종 확정'
-                : draft.status}
-            </span>
-            <p className="text-sm text-slate-600 mt-2">
-              AI가 작성한 초안입니다. 내용을 검토하고 수정할 수 있습니다.
-            </p>
-          </div>
-          <Button className="bg-[var(--dotting-deep-navy)] hover:bg-[var(--dotting-deep-navy)]/90 text-white font-medium px-6">
-            수정하기
-          </Button>
-        </div>
-      </Card>
-
-      {/* 결제 CTA (미결제 상태에서만) */}
-      {!isPaidSession && (
-        <Card className="mt-6 p-6 bg-gradient-to-r from-[var(--dotting-soft-cream)] to-amber-50 border-[var(--dotting-warm-gold)]">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-center md:text-left">
-              <h3 className="text-lg font-bold text-[var(--dotting-deep-navy)] mb-1">
-                📖 이야기를 책으로 완성해보세요
-              </h3>
-              <p className="text-sm text-[var(--dotting-muted-text)]">
-                결제 후 PDF 다운로드, 실물 책 인쇄까지 가능해요
-              </p>
-            </div>
-            <Button
-              onClick={() => setShowPaymentModal(true)}
-              className="bg-[var(--dotting-deep-navy)] hover:bg-[#2A4A6F] text-white font-medium px-8 py-3 text-base"
-            >
-              결제하고 완성하기
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* 결제 완료 상태 */}
-      {isPaidSession && (
-        <Card className="mt-6 p-6 bg-green-50 border-green-200">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-center md:text-left">
-              <h3 className="text-lg font-bold text-green-800 mb-1">
-                ✅ 결제가 완료되었어요
-              </h3>
-              <p className="text-sm text-green-700">
-                이제 PDF 다운로드와 실물 책 인쇄가 가능해요
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="border-green-600 text-green-700 hover:bg-green-100"
-              >
-                PDF 다운로드
-              </Button>
-              <Button
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                실물 책 주문
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
 
       {/* 결제 모달 */}
       {session && (
@@ -333,7 +417,7 @@ export default function PreviewPage() {
           subjectName={session.subject_name}
           onPaymentRequested={() => {
             setShowPaymentModal(false)
-            loadPreview() // 상태 새로고침
+            loadPreview()
           }}
         />
       )}
