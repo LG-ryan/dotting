@@ -6,6 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { OrderStatusBadge } from '@/components/payment/OrderStatusBadge'
 import type { OrderPaymentStatus } from '@/types/database'
 
+// 캐싱 비활성화 - 항상 최신 데이터 조회
+export const dynamic = 'force-dynamic'
+
 interface SessionWithOrder {
   id: string
   subject_name: string
