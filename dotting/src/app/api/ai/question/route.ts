@@ -55,7 +55,7 @@ async function isPaidSession(sessionId: string): Promise<boolean> {
     .select('status')
     .eq('session_id', sessionId)
     .eq('is_active', true)
-    .in('status', PAID_ORDER_STATUSES as unknown as string[])
+    .in('status', [...PAID_ORDER_STATUSES])
     .limit(1)
     .single()
   
@@ -84,7 +84,7 @@ async function getInterviewState(sessionId: string): Promise<InterviewState> {
     .eq('id', sessionId)
     .single()
   
-  return data?.interview_state || DEFAULT_INTERVIEW_STATE
+  return (data?.interview_state as unknown as InterviewState) || DEFAULT_INTERVIEW_STATE
 }
 
 // 세션의 interview_state 업데이트
@@ -92,7 +92,7 @@ async function updateInterviewState(sessionId: string, state: InterviewState): P
   const supabase = await createClient()
   await supabase
     .from('sessions')
-    .update({ interview_state: state })
+    .update({ interview_state: JSON.parse(JSON.stringify(state)) })
     .eq('id', sessionId)
 }
 
