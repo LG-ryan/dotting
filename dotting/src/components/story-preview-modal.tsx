@@ -64,7 +64,7 @@ export function StoryPreviewModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white relative">
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-pulse">
@@ -248,7 +248,7 @@ export function StoryPreviewModal({
                   disabled={remainingAttempts <= 0}
                   className="min-w-[120px]"
                 >
-                  다른 느낌으로
+                  다시 정리하기
                 </Button>
                 <Button
                   onClick={handleConfirm}

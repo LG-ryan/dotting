@@ -188,7 +188,7 @@ export default function NewProjectPage() {
           <Button
             type="submit"
             disabled={loading || !subjectName || !subjectRelation}
-            className="h-11 px-6 bg-[var(--dotting-deep-navy)] text-white hover:bg-[#2A4A6F] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-11 px-8 bg-[#1E3A5F] text-white font-semibold hover:bg-[#2A4A6F] disabled:bg-[#94A3B8] disabled:text-white disabled:cursor-not-allowed shadow-md"
           >
             {loading ? '생성 중...' : '프로젝트 시작'}
           </Button>

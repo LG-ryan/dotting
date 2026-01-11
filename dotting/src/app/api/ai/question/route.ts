@@ -113,9 +113,15 @@ ${interviewOSHint}
 
     // 첫 질문인 경우
     if (isFirst) {
-      const firstQuestionPrompt = `${subjectName}님(${subjectRelation})의 이야기를 처음 시작하는 따뜻한 첫 질문을 해주세요. 
-너무 무겁지 않게, 어린 시절이나 성장 배경에 대한 편안한 질문으로 시작해주세요.
-질문만 출력하세요.`
+      const firstQuestionPrompt = `${subjectName}님(${subjectRelation})의 이야기를 처음 시작합니다.
+
+먼저 따뜻한 인사로 시작하고, 이어서 첫 질문을 해주세요.
+- 인사는 "${subjectName}님"을 부르며 편안하게 시작하세요
+- 예시: "안녕하세요, ${subjectName}님! 오늘 함께 이야기 나눌 수 있어서 정말 기뻐요. 천천히 편하게 말씀해 주세요."
+- 인사 후 한 줄 띄우고, 어린 시절이나 성장 배경에 대한 편안한 첫 질문을 해주세요
+- 너무 무겁지 않게 시작해주세요
+
+인사와 질문을 함께 출력하세요.`
 
       const response = await openai.chat.completions.create({
         model: 'gpt-4o',

@@ -36,15 +36,13 @@ async function getUser(): Promise<User | null> {
   if (user) {
     // public.users 레코드 보장 (upsert)
     // 이미 있으면 업데이트, 없으면 생성
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('users')
       .upsert({
         id: user.id,
         email: user.email || '',
         name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-        // role은 기존 값 유지 (upsert 시 변경 안 함)
-      }, {
+      } as { id: string; email: string; name: string }, {
         onConflict: 'id',
         ignoreDuplicates: false,
       })

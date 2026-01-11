@@ -197,6 +197,11 @@ export default function ProjectPage() {
 
     setGenerating(true)
 
+    // 고정 인사 + 첫 질문 (LLM 없이도 항상 표시)
+    const defaultGreeting = `안녕하세요, ${sessionData.subject_name}님! 오늘 함께 이야기 나눌 수 있어서 정말 기뻐요. 천천히 편하게 말씀해 주세요.
+
+${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그때의 동네 풍경이나 분위기가 기억나시면 들려주세요.`
+
     try {
       const response = await fetch('/api/ai/question', {
         method: 'POST',
@@ -211,41 +216,66 @@ export default function ProjectPage() {
       })
 
       const data = await response.json()
+      
+      // LLM 질문이 있으면 사용, 없으면 고정 인사 사용
+      const questionContent = data.question || defaultGreeting
+      const isFallback = !data.question || data.is_fallback
 
-      if (data.question) {
-        // meta 정보 구성
-        const meta: MessageMeta = {
-          question_source: data.is_fallback ? 'fallback' : 'llm',
-        }
-        if (data.is_fallback && data.error_message) {
-          meta.fallback_reason = data.error_message
-        }
+      // meta 정보 구성
+      const meta: MessageMeta = {
+        question_source: isFallback ? 'fallback' : 'llm',
+      }
+      if (isFallback) {
+        meta.fallback_reason = data.error_message || '기본 인사 사용'
+      }
+      
+      // DB에 AI 질문 저장 (meta 포함)
+      const { data: newMessage } = await supabase
+        .from('messages')
+        .insert({
+          session_id: sessionId,
+          role: 'ai',
+          content: questionContent,
+          input_type: 'text',
+          order_index: 0,
+          meta,
+        })
+        .select()
+        .single()
+
+      if (newMessage) {
+        setMessages([newMessage])
         
-        // DB에 AI 질문 저장 (meta 포함)
-        const { data: newMessage } = await supabase
-          .from('messages')
-          .insert({
-            session_id: sessionId,
-            role: 'ai',
-            content: data.question,
-            input_type: 'text',
-            order_index: 0,
-            meta,
-          })
-          .select()
-          .single()
-
-        if (newMessage) {
-          setMessages([newMessage])
-          
-          if (data.is_fallback) {
-            setConsecutiveFallbacks(1)
-          }
+        if (isFallback) {
+          setConsecutiveFallbacks(1)
         }
       }
     } catch (error) {
       console.error('Failed to generate first question:', error)
-      setQuestionFailed(true)
+      
+      // API 실패해도 고정 인사로 표시
+      const meta: MessageMeta = {
+        question_source: 'fallback',
+        fallback_reason: 'API 호출 실패',
+      }
+      
+      const { data: newMessage } = await supabase
+        .from('messages')
+        .insert({
+          session_id: sessionId,
+          role: 'ai',
+          content: defaultGreeting,
+          input_type: 'text',
+          order_index: 0,
+          meta,
+        })
+        .select()
+        .single()
+
+      if (newMessage) {
+        setMessages([newMessage])
+        setConsecutiveFallbacks(1)
+      }
     }
 
     setGenerating(false)
@@ -691,15 +721,13 @@ export default function ProjectPage() {
     <div className="max-w-3xl mx-auto">
       {/* 헤더 */}
       <div className="mb-6">
-        {/* 뒤로가기 버튼 */}
-        <Button
-          variant="ghost"
-          size="sm"
+        {/* 뒤로가기 버튼 - 부드러운 텍스트 링크 스타일 */}
+        <button
           onClick={() => router.push('/dashboard')}
-          className="mb-4 text-[var(--dotting-muted-text)] hover:text-[var(--dotting-deep-navy)]"
+          className="mb-4 text-sm text-[#6B7280] hover:text-[#1E3A5F] transition-colors"
         >
           ← 프로젝트 목록으로
-        </Button>
+        </button>
         
         <div className="flex justify-between items-start">
           <div>
@@ -776,7 +804,7 @@ export default function ProjectPage() {
                 key={message.id}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className="flex flex-col items-end max-w-[80%]">
+                <div className={`flex flex-col max-w-[80%] ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
                   {isEditing ? (
                     // 수정 모드
                     <div className="w-full">
@@ -809,12 +837,25 @@ export default function ProjectPage() {
                           message.role === 'user'
                             ? 'bg-[var(--dotting-warm-gold)] text-[var(--dotting-deep-navy)] rounded-br-md font-medium'
                             : message.meta?.question_source === 'fallback'
-                            ? 'bg-amber-50 text-[var(--dotting-deep-navy)] rounded-bl-md border border-amber-200'
+                            ? 'bg-[var(--dotting-soft-cream)] text-[var(--dotting-deep-navy)] rounded-bl-md border border-amber-200'
                             : 'bg-[var(--dotting-soft-cream)] text-[var(--dotting-deep-navy)] rounded-bl-md border border-[var(--dotting-border)]'
                         }`}
                       >
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                       </div>
+                      
+                      {/* 마지막 AI 질문 아래: 답변 가이드 힌트 */}
+                      {isLastAiMessage && !generating && (
+                        <div className="mt-3 p-3 bg-[#FEFCF8] rounded-lg border border-[#F0EBE0] max-w-full">
+                          <p className="text-xs text-[#8B7355] font-medium mb-1.5">💡 이런 내용을 떠올려보세요</p>
+                          <div className="text-xs text-[#A89880] space-y-1">
+                            <p>• <span className="text-[#8B7355]">장소와 풍경</span> — 그때 어디에 있었나요?</p>
+                            <p>• <span className="text-[#8B7355]">함께한 사람</span> — 누구와 함께였나요?</p>
+                            <p>• <span className="text-[#8B7355]">감정과 느낌</span> — 어떤 기분이었나요?</p>
+                            <p>• <span className="text-[#8B7355]">오감의 기억</span> — 소리, 냄새, 맛이 기억나시나요?</p>
+                          </div>
+                        </div>
+                      )}
                       
                       {/* 마지막 사용자 메시지: 수정 버튼 */}
                       {isLastUserMessage && !generating && (

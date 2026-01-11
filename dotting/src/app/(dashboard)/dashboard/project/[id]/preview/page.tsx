@@ -243,7 +243,7 @@ export default function PreviewPage() {
               AI가 작성한 초안입니다. 내용을 검토하고 수정할 수 있습니다.
             </p>
           </div>
-          <Button className="bg-slate-900 hover:bg-slate-800">
+          <Button className="bg-[var(--dotting-deep-navy)] hover:bg-[var(--dotting-deep-navy)]/90 text-white font-medium px-6">
             수정하기
           </Button>
         </div>

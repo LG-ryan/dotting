@@ -1,11 +1,16 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
 // 서버 전용 Supabase 클라이언트 (service_role)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// 로컬 개발 환경에서는 service_role 키가 없을 수 있음 → analytics 비활성화
+let supabaseAdmin: SupabaseClient | null = null
+
+if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+}
 
 // 토큰 해시 생성 (HMAC-SHA256)
 export function hashToken(token: string): string {
@@ -49,6 +54,11 @@ interface LogEventParams {
 // 이벤트 로깅 함수 (서버 전용)
 // ============================================
 export async function logEvent(params: LogEventParams): Promise<void> {
+  // analytics가 비활성화된 경우 (service_role 키 없음) → 무시
+  if (!supabaseAdmin) {
+    return
+  }
+
   const {
     sessionId,
     userId,
