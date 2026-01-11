@@ -78,12 +78,21 @@ export default function SignupPage() {
   if (success) {
     return (
       <Card className="border-0 shadow-xl bg-white">
-        <CardHeader className="space-y-1 text-center">
+        <CardHeader className="space-y-4 text-center">
+          <div className="w-16 h-16 bg-[var(--dotting-warm-gold)]/20 rounded-full flex items-center justify-center mx-auto">
+            <svg className="w-8 h-8 text-[var(--dotting-warm-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
           <CardTitle className="text-2xl font-bold tracking-tight text-[var(--dotting-deep-navy)]">이메일을 확인하세요</CardTitle>
           <CardDescription className="text-[var(--dotting-muted-text)]">
-            {email}로 인증 메일을 보냈습니다.
-            <br />
-            메일의 링크를 클릭하여 가입을 완료해주세요.
+            <strong className="text-[var(--dotting-deep-navy)]">{email}</strong>로<br />
+            인증 메일을 보냈습니다.
+            <br /><br />
+            <span className="text-sm">
+              📧 메일함을 확인하고 인증 링크를 클릭하면<br />
+              회원가입이 완료됩니다.
+            </span>
           </CardDescription>
         </CardHeader>
         <CardFooter>
