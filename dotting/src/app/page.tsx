@@ -102,9 +102,17 @@ export default function LandingPage() {
               </div>
               
               {/* 안심 메시지 */}
-              <p className="text-sm text-[var(--dotting-muted-gray)]">
+              <p className="text-sm text-[var(--dotting-muted-gray)] mb-3">
                 무료로 시작하세요 · 완성될 때까지 결제 없음
               </p>
+              
+              {/* 철학 페이지 링크 */}
+              <Link 
+                href="/why" 
+                className="text-sm text-[var(--dotting-warm-amber)] hover:underline underline-offset-4"
+              >
+                왜 DOTTING인가요? →
+              </Link>
             </div>
             
             {/* 책 목업 영역 - 미니멀 2.5D 스타일 */}
