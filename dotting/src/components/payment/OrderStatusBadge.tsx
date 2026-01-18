@@ -23,7 +23,7 @@ const STATUS_CONFIG: Record<OrderStatus, {
     label: '결제 대기',
     color: 'text-yellow-800',
     bgColor: 'bg-yellow-100',
-    description: '결제 후 인터뷰를 시작할 수 있습니다',
+    description: '아래 계좌로 입금해주시면 확인 후 시작됩니다',
   },
   paid: {
     label: '결제 완료',

@@ -185,15 +185,15 @@ export default function NewProjectPage() {
           <Button
             type="button"
             variant="outline"
+            size="default"
             onClick={() => router.back()}
-            className="h-11 px-6"
           >
             취소
           </Button>
           <Button
             type="submit"
+            size="default"
             disabled={loading || !subjectName || !subjectRelation}
-            className="h-11 px-8 bg-[#1E3A5F] text-white font-semibold hover:bg-[#2A4A6F] disabled:bg-[#94A3B8] disabled:text-white disabled:cursor-not-allowed shadow-md"
           >
             {loading ? '생성 중...' : '프로젝트 시작'}
           </Button>

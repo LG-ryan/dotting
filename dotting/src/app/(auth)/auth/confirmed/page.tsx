@@ -56,7 +56,8 @@ export default function AuthConfirmedPage() {
             </p>
             <Button
               onClick={() => router.push('/dashboard')}
-              className="w-full h-12 bg-[var(--dotting-deep-navy)] text-white hover:bg-[#2A4A6F]"
+              size="default"
+              className="w-full bg-[var(--dotting-deep-navy)] text-white hover:bg-[#2A4A6F]"
             >
               대시보드로 이동
             </Button>
@@ -78,7 +79,8 @@ export default function AuthConfirmedPage() {
             </p>
             <Button
               onClick={() => router.push('/login')}
-              className="w-full h-12 bg-[var(--dotting-deep-navy)] text-white hover:bg-[#2A4A6F]"
+              size="default"
+              className="w-full bg-[var(--dotting-deep-navy)] text-white hover:bg-[#2A4A6F]"
             >
               로그인 페이지로
             </Button>

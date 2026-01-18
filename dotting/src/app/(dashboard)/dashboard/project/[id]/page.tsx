@@ -11,6 +11,8 @@ import { StoryPreviewModal } from '@/components/story-preview-modal'
 import { OrderStatusCard } from '@/components/payment/OrderStatusBadge'
 import { PaymentModal } from '@/components/payment/PaymentModal'
 import { FreeLimitCelebrationModal } from '@/components/payment/FreeLimitCelebrationModal'
+import { PaymentConfirmedModal } from '@/components/payment/PaymentConfirmedModal'
+import { ArchiveDownloadButton } from '@/components/archive/ArchiveDownloadButton'
 import type { OrderPaymentStatus } from '@/types/database'
 import { FREE_QUESTIONS_LIMIT, LIMIT_MESSAGES, PAID_ORDER_STATUSES } from '@/lib/free-tier-limits'
 
@@ -94,6 +96,8 @@ export default function ProjectPage() {
   
   // 결제/주문 관련 상태
   const [orderStatus, setOrderStatus] = useState<OrderPaymentStatus | null>(null)
+  const [orderId, setOrderId] = useState<string | null>(null)
+  const [orderPackage, setOrderPackage] = useState<string | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   
   // 무료 티어 제한 상태
@@ -101,8 +105,10 @@ export default function ProjectPage() {
   const [freeLimitReached, setFreeLimitReached] = useState(false)
   const [isPaidSession, setIsPaidSession] = useState(false)
   const [showCelebrationModal, setShowCelebrationModal] = useState(false)
+  const [showPaymentConfirmedModal, setShowPaymentConfirmedModal] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [isPageVisible, setIsPageVisible] = useState(true)
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -170,7 +176,7 @@ export default function ProjectPage() {
     // 활성 주문 정보 로드
     const { data: orderData } = await supabase
       .from('orders')
-      .select('status')
+      .select('id, status, package')
       .eq('session_id', sessionId)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
@@ -178,9 +184,19 @@ export default function ProjectPage() {
       .single()
     
     if (orderData) {
+      setOrderId(orderData.id)
+      setOrderPackage(orderData.package)
       setOrderStatus(orderData.status as OrderPaymentStatus)
       // 결제 완료 상태 확인 (단일 소스 상수 사용)
       setIsPaidSession(PAID_ORDER_STATUSES.includes(orderData.status as typeof PAID_ORDER_STATUSES[number]))
+      
+      // 페이지 로드 시 결제 완료 상태면 셀레브레이션 모달 표시 (한 번만)
+      if (orderData.status === 'paid') {
+        const hasSeenCelebration = localStorage.getItem(`celebration_${orderData.id}`)
+        if (!hasSeenCelebration) {
+          setShowPaymentConfirmedModal(true)
+        }
+      }
     }
 
     // 메시지 로드
@@ -207,6 +223,72 @@ export default function ProjectPage() {
 
     setLoading(false)
   }
+
+  // 페이지 가시성 감지
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden)
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
+  // 결제 확인 실시간 구독 + 폴링 (Supabase Realtime)
+  useEffect(() => {
+    if (orderStatus !== 'pending_payment' || !orderId || !isPageVisible) return
+
+    // 1. Realtime 구독 (즉시 알림)
+    const channel = supabase
+      .channel(`order_${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          const newStatus = payload.new.status
+          if (newStatus === 'paid') {
+            setOrderStatus('paid')
+            setOrderPackage(payload.new.package)
+            
+            // localStorage 확인: 이미 본 모달인지 체크
+            const hasSeenCelebration = localStorage.getItem(`celebration_${orderId}`)
+            if (!hasSeenCelebration) {
+              setShowPaymentConfirmedModal(true)
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    // 2. Fallback 폴링 (30초 간격, Realtime이 실패할 경우 대비)
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('status, package')
+        .eq('id', orderId)
+        .single()
+
+      if (data?.status === 'paid') {
+        setOrderStatus('paid')
+        setOrderPackage(data.package)
+        
+        // localStorage 확인: 이미 본 모달인지 체크
+        const hasSeenCelebration = localStorage.getItem(`celebration_${orderId}`)
+        if (!hasSeenCelebration) {
+          setShowPaymentConfirmedModal(true)
+        }
+      }
+    }, 30000) // 30초
+
+    return () => {
+      channel.unsubscribe()
+      clearInterval(interval)
+    }
+  }, [orderStatus, orderId, isPageVisible, supabase])
 
   const generateFirstQuestion = async (sessionData: Session | null) => {
     if (!sessionData) return
@@ -245,7 +327,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
         meta.fallback_reason = data.error_message || '기본 인사 사용'
       }
       
-      // DB에 AI 질문 저장 (meta 포함)
+      // DB에 도팅 질문 저장 (meta 포함)
       const { data: newMessage } = await supabase
         .from('messages')
         .insert({
@@ -325,7 +407,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
       setFreeQuestionsUsed(prev => prev + 1)
     }
 
-    // AI 후속 질문 생성
+    // 도팅 후속 질문 생성
     await generateNextQuestion([...messages, { 
       id: savedUserMessage?.id || '', 
       role: 'user', 
@@ -338,7 +420,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
     setSending(false)
   }
 
-  // AI 질문 생성 (재시도 가능)
+  // 도팅 질문 생성 (재시도 가능)
   const generateNextQuestion = async (currentMessages: Message[]) => {
     setGenerating(true)
     setQuestionFailed(false)
@@ -376,7 +458,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
           meta.fallback_reason = data.error_message
         }
         
-        // AI 질문 저장 (meta 포함)
+        // 도팅 질문 저장 (meta 포함)
         const { data: savedAiMessage } = await supabase
           .from('messages')
           .insert({
@@ -418,7 +500,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
     
     setRetryingQuestion(true)
     
-    // 마지막 AI 메시지가 fallback이면 삭제하고 재생성
+    // 마지막 도팅 메시지가 fallback이면 삭제하고 재생성
     const lastMessage = messages[messages.length - 1]
     if (lastMessage?.role === 'ai') {
       // DB에서 삭제
@@ -496,7 +578,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
     setEditingMessageId(null)
     setEditText('')
     
-    // 이후 AI 질문이 있으면 재생성 선택 모달 표시
+    // 이후 도팅 질문이 있으면 재생성 선택 모달 표시
     const messageIndex = messages.findIndex(m => m.id === editingMessageId)
     const hasFollowingAiMessage = messages.slice(messageIndex + 1).some(m => m.role === 'ai')
     
@@ -516,7 +598,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
     
     const { messageIndex, newContent, originalMessages } = pendingEditData
     
-    // 이후 AI 메시지 삭제하고 재생성
+    // 이후 도팅 메시지 삭제하고 재생성
     const messagesUntilEdit = originalMessages.slice(0, messageIndex + 1)
     messagesUntilEdit[messagesUntilEdit.length - 1] = { 
       ...messagesUntilEdit[messagesUntilEdit.length - 1], 
@@ -756,17 +838,17 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
         {/* 뒤로가기 버튼 */}
         <button
           onClick={() => router.push('/dashboard')}
-          className="mb-4 text-sm text-[#6B7280] hover:text-[#1E3A5F] transition-colors"
+          className="mb-4 text-[13px] text-[var(--dotting-muted-gray)] hover:text-[var(--dotting-deep-navy)] transition-colors"
         >
           ← 프로젝트 목록으로
         </button>
         
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">
+            <h1 className="text-[24px] leading-[1.35] font-bold text-[var(--dotting-deep-navy)]">
               {session?.subject_name}님의 이야기
             </h1>
-            <p className="text-slate-600 text-sm mt-1">
+            <p className="text-[var(--dotting-muted-gray)] text-[13px] mt-1">
               {session?.subject_relation} · {userAnswerCount}개의 답변
             </p>
           </div>
@@ -775,7 +857,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
             size="sm"
             onClick={handleCreateShareLink}
             disabled={shareLoading}
-            className="text-amber-700 border-amber-200 hover:bg-amber-50"
+            className="text-[var(--dotting-warm-amber)] border-[var(--dotting-warm-amber)]/20 hover:bg-[var(--dotting-warm-amber)]/5"
           >
             {shareLoading ? '생성 중...' : '링크 공유'}
           </Button>
@@ -784,16 +866,30 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
       
       {/* 결제/주문 상태 카드 */}
       {orderStatus && ['pending_payment', 'paid', 'in_production', 'ready_to_ship', 'shipped', 'delivered'].includes(orderStatus) && (
-        <div className="mb-6">
+        <div className="mb-6" data-order-status-card>
           <OrderStatusCard status={orderStatus} />
-          {orderStatus === 'pending_payment' && (
-            <Button
-              onClick={() => setShowPaymentModal(true)}
-              className="mt-3 w-full bg-[var(--dotting-deep-navy)] hover:bg-[#2A4A6F]"
-            >
-              결제 안내 보기
-            </Button>
-          )}
+          
+          {/* 중앙 액션 영역 */}
+          <div className="mt-4 space-y-3">
+            {orderStatus === 'pending_payment' && (
+              <Button
+                onClick={() => setShowPaymentModal(true)}
+                size="default"
+                className="w-full bg-[var(--dotting-deep-navy)] hover:bg-[#2A4A6F]"
+              >
+                결제 안내 보기
+              </Button>
+            )}
+            
+            {/* 유산 상자 다운로드 (Heritage 패키지, 편집 완료 시) */}
+            {orderId && orderPackage === 'premium' && orderStatus === 'paid' && session && (
+              <ArchiveDownloadButton
+                orderId={orderId}
+                sessionId={session.id}
+                subjectName={session.subject_name}
+              />
+            )}
+          </div>
         </div>
       )}
       
@@ -945,7 +1041,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                       </div>
                       
-                      {/* 마지막 AI 질문 아래: 답변 가이드 힌트 */}
+                      {/* 마지막 도팅 질문 아래: 답변 가이드 힌트 */}
                       {isLastAiMessage && !generating && (
                         <div className="mt-3 p-3 bg-[#FEFCF8] rounded-lg border border-[#F0EBE0] max-w-full">
                           <p className="text-xs text-[#8B7355] font-medium mb-1.5">이런 내용을 떠올려보세요</p>
@@ -968,7 +1064,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
                         </button>
                       )}
                       
-                      {/* 마지막 AI 메시지가 fallback이면: 다른 질문 받기 버튼 */}
+                      {/* 마지막 도팅 메시지가 fallback이면: 다른 질문 받기 버튼 */}
                       {isLastAiMessage && message.meta?.question_source === 'fallback' && !generating && (
                         <button
                           onClick={handleRetryQuestion}
@@ -1077,7 +1173,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
                 <Button
                   onClick={handleSendMessage}
                   disabled={!inputText.trim() || sending || generating}
-                  className="h-[60px] px-6"
+                  size="default"
                 >
                   전송
                 </Button>
@@ -1104,6 +1200,7 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
         <Button
           disabled={!canGenerateStory}
           onClick={handleStartPreview}
+          size="default"
         >
           {hasExistingPreview ? '이야기 이어서 보기' : '이야기 정리하기'}
         </Button>
@@ -1152,6 +1249,17 @@ ${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그�
         </div>
       )}
       
+      {/* 결제 확인 모달 */}
+      {showPaymentConfirmedModal && session && orderId && orderPackage && (
+        <PaymentConfirmedModal
+          isOpen={showPaymentConfirmedModal}
+          onClose={() => setShowPaymentConfirmedModal(false)}
+          packageType={orderPackage as 'pdf_only' | 'standard' | 'premium'}
+          subjectName={session.subject_name}
+          orderId={orderId}
+        />
+      )}
+
       {/* 공유 링크 모달 */}
       {showShareModal && shareUrl && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

@@ -57,7 +57,9 @@
   /* === Primary Colors === */
   --dotting-deep-navy: #1A365D;      /* 메인 CTA, 헤더, 강조 텍스트 */
   --dotting-warm-amber: #F59E0B;     /* 성취/축하, 강조 포인트 */
-  --dotting-soft-cream: #FFFBEB;     /* 배경 (70%+) */
+  --dotting-soft-cream: #FDF8F3;     /* 배경 (Desk Color) - 더 따뜻한 크림색 */
+  --dotting-paper-white: #FFFFFF;    /* 책 속지 (Page Color) */
+  --dotting-warm-gray: #F7F5F0;      /* 섹션 구분용 웜그레이 */
   
   /* === Secondary Colors === */
   --dotting-ocean-teal: #0D9488;     /* 성공 상태, 완료 */
@@ -164,9 +166,65 @@
   }
 }
 
+/* 종이 질감 오버레이 */
+.texture-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.1'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
 /* =====================================================
    DOTTING 유틸리티 클래스
    ===================================================== */
+
+/* v1.2: 광학적 정렬 시스템 */
+:root {
+  --form-input-height: 48px;
+  --form-button-height: 56px;
+  --optical-offset: calc((var(--form-button-height) - var(--form-input-height)) / 2);
+  --optical-weight-factor: 0.5;
+  --optical-adjustment: calc(var(--optical-offset) * var(--optical-weight-factor) * -1);
+}
+
+.optical-center {
+  display: flex;
+  align-items: center;
+}
+
+.optical-center .form-input,
+.optical-center input[type="text"],
+.optical-center input[type="email"],
+.optical-center input[type="search"] {
+  transform: translateY(var(--optical-adjustment));
+}
+
+.optical-center .form-input:focus-within,
+.optical-center input:focus {
+  transform: translateY(0);
+  border-width: 2px;
+  box-shadow: 
+    inset 0 1px 2px rgba(0, 0, 0, 0.03),
+    0 0 0 3px rgba(26, 54, 93, 0.08),
+    0 2px 4px rgba(26, 54, 93, 0.12);
+}
+
+/* Form 요소 기본 스타일 */
+.form-input {
+  height: 48px;
+  border: 1px solid var(--dotting-border);
+  background: #FFFFFF;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.form-input:focus-within {
+  border: 2px solid var(--dotting-deep-navy);
+  background: #FAFBFC;
+}
 
 /* 본문 폭 제한 (가독성) */
 .dotting-prose {
@@ -183,20 +241,59 @@
   letter-spacing: -0.01em;
 }
 
-/* AI 말풍선 */
+/* v1.2: 채팅 UI 개선 */
 .dotting-bubble-ai {
   background-color: var(--dotting-ai-bubble);
-  color: var(--dotting-deep-navy);
-  border-radius: 1rem;
-  border-top-left-radius: 0.25rem;
+  border: 1px solid #E5E7EB;
+  color: #1F2937;
+  border-radius: 16px;
+  border-top-left-radius: 4px;
+  padding: 14px 18px;
 }
 
-/* 사용자 말풍선 */
 .dotting-bubble-user {
-  background-color: var(--dotting-warm-gold);
-  color: var(--dotting-deep-navy);
-  border-radius: 1rem;
-  border-top-right-radius: 0.25rem;
+  background-color: var(--dotting-deep-navy);
+  color: #F8F9FA;
+  border-radius: 20px;
+  border-top-right-radius: 4px;
+  padding: 14px 18px;
+  box-shadow: 
+    0 2px 4px rgba(26, 54, 93, 0.1),
+    0 1px 2px rgba(26, 54, 93, 0.06);
+}
+
+/* v1.2: 터치 최적화 */
+button,
+[role="button"],
+.dotting-btn-primary,
+.dotting-btn-secondary,
+.dotting-btn-ghost {
+  /* iOS Safari 300ms 딜레이 제거 */
+  touch-action: manipulation;
+  
+  /* 터치 하이라이트 제거 */
+  -webkit-tap-highlight-color: transparent;
+  
+  /* 텍스트 선택 방지 */
+  user-select: none;
+  -webkit-user-select: none;
+  
+  position: relative;
+}
+
+/* 터치 영역 확장 (최소 44x44px) */
+button::before,
+[role="button"]::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+}
+
+/* Active 상태 즉각 피드백 */
+button:active,
+[role="button"]:active {
+  transition-duration: 0ms;
 }
 
 /* Primary CTA 버튼 */
@@ -207,7 +304,7 @@
   padding: 0.875rem 1.5rem;
   border-radius: 0.75rem;
   transition: all 0.2s ease-out;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--shadow-accent);
 }
 .dotting-btn-primary:hover {
   background-color: #2A4A6F;
@@ -215,7 +312,7 @@
   box-shadow: 0 4px 12px rgba(26, 54, 93, 0.25);
 }
 .dotting-btn-primary:active {
-  transform: scale(0.98);
+  transform: scale(0.97) translateY(0);
 }
 
 /* Secondary 버튼 */
@@ -284,6 +381,15 @@
   --dot-gap: 4px;
   --dot-active: var(--dotting-warm-amber);
   --dot-inactive: #E5E7EB;
+  
+  /* v1.2: Heritage 차별화 */
+  --shadow-accent: rgba(26, 54, 93, 0.1);
+}
+
+/* v1.2: Heritage 사용자 (Micro-elements 차별화) */
+.heritage {
+  --shadow-accent: rgba(245, 158, 11, 0.08);
+  --dot-gradient: linear-gradient(135deg, #F59E0B 0%, #FCD34D 50%, #F59E0B 100%);
 }
 
 /* ●●● 컨테이너 */
@@ -293,15 +399,240 @@
   gap: var(--dot-gap);
 }
 
+/* =====================================================
+   오디오 메시지 시스템 (v1.2)
+   유니버설 디자인: 시니어와 젊은 세대 모두를 위한 음성 UI
+   ===================================================== */
+
+.dotting-audio-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--dotting-paper-white);
+  border: 1px solid var(--dotting-border);
+  border-radius: 16px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dotting-audio-message:hover {
+  border-color: var(--dotting-warm-amber);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+}
+
+/* Heritage 테마 */
+.dotting-audio-message.heritage {
+  background: linear-gradient(135deg, #FFFBF0 0%, #FFFFFF 100%);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.dotting-audio-message.heritage:hover {
+  border-color: var(--dotting-warm-amber);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+}
+
+/* 보물로 표시된 메시지 */
+.dotting-audio-message.is-treasure {
+  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+  border: 2px solid var(--dotting-warm-amber);
+}
+
+/* 파형 컨테이너 */
+.audio-waveform-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 재생 버튼 */
+.audio-play-button {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dotting-deep-navy);
+  color: white;
+  border-radius: 50%;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.audio-play-button:hover {
+  background: #2A4A6F;
+  transform: scale(1.05);
+}
+
+.audio-play-button:active {
+  transform: scale(0.95);
+  transition-duration: 0ms;
+}
+
+/* 파형 시각화 */
+.audio-waveform {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  flex: 1;
+  min-width: 0;
+}
+
+.audio-waveform-bar {
+  flex: 1;
+  min-width: 2px;
+  background: var(--dotting-muted-gray);
+  border-radius: 2px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
+}
+
+.audio-waveform-bar.active {
+  background: var(--dotting-warm-amber);
+  opacity: 1 !important;
+}
+
+/* Heritage 파형 (Ink Spread 효과) */
+.audio-waveform-bar.heritage.active {
+  background: linear-gradient(180deg, #F59E0B 0%, #FCD34D 50%, #F59E0B 100%);
+  position: relative;
+}
+
+.audio-waveform-bar.heritage.active::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, transparent 70%);
+  border-radius: 4px;
+  animation: heritage-glow 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+@keyframes heritage-glow {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+}
+
+/* 오디오 길이 표시 */
+.audio-duration {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dotting-muted-gray);
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* 보물 마킹 버튼 */
+.audio-treasure-button {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--dotting-muted-gray);
+  border: 1px solid var(--dotting-border);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.audio-treasure-button:hover {
+  background: var(--dotting-warm-gold);
+  border-color: var(--dotting-warm-amber);
+  color: var(--dotting-deep-navy);
+}
+
+.audio-treasure-button:active {
+  transform: scale(0.95);
+  transition-duration: 0ms;
+}
+
+.audio-treasure-button.active {
+  background: var(--dotting-warm-amber);
+  border-color: var(--dotting-warm-amber);
+  color: white;
+}
+
+.audio-treasure-button .treasure-index {
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+/* 보물 마킹 피드백 애니메이션 */
+.treasure-glow {
+  animation: treasure-pulse 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes treasure-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 고대비 토스트 (12:1 명도 대비) */
+.dotting-toast-treasure {
+  background: var(--dotting-deep-navy) !important;
+  color: #F8F9FA !important;
+  border: 2px solid var(--dotting-warm-amber) !important;
+  border-radius: 12px !important;
+  padding: 16px 20px !important;
+  font-weight: 600 !important;
+  box-shadow: 
+    0 4px 12px rgba(26, 54, 93, 0.3),
+    0 0 0 1px rgba(245, 158, 11, 0.5) !important;
+}
+
+.dotting-toast-treasure [data-icon] {
+  color: var(--dotting-warm-amber) !important;
+}
+
 /* 개별 점 */
 .dotting-dot {
+  position: relative;
   width: var(--dot-size-md);
   height: var(--dot-size-md);
   border-radius: 50%;
   background-color: var(--dot-inactive);
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  
+  /* v1.2: GPU 가속 준비 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  
+  transition: background-color 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
+.dotting-dot.filled {
+  background-color: var(--dot-active);
+}
+
+/* v1.2: 레거시 호환 */
 .dotting-dot.active {
   background-color: var(--dot-active);
 }
@@ -315,6 +646,53 @@
 .dotting-dots--lg .dotting-dot {
   width: var(--dot-size-lg);
   height: var(--dot-size-lg);
+}
+
+/* v1.2: Heritage 금박 효과 */
+.dotting-dot-heritage {
+  background: linear-gradient(
+    135deg,
+    #F59E0B 0%,
+    #FCD34D 50%,
+    #F59E0B 100%
+  );
+  background-size: 200% 200%;
+  
+  /* 종이 질감 (SVG 노이즈) */
+  background-image: 
+    linear-gradient(135deg, #F59E0B 0%, #FCD34D 50%, #F59E0B 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
+  background-blend-mode: overlay;
+  
+  /* 입체감 (금박 효과) */
+  box-shadow: 
+    inset 0 1px 1px rgba(252, 211, 77, 0.8),
+    inset 0 -1px 1px rgba(180, 83, 9, 0.3),
+    0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+.dotting-dot-heritage.is-filling {
+  animation: 
+    dotting-ink-spread 0.8s cubic-bezier(0.2, 0.05, 0.2, 1),
+    gold-shimmer 1.2s ease-in-out;
+}
+
+.dotting-dot-heritage::after {
+  background: radial-gradient(
+    circle,
+    rgba(252, 211, 77, 0.5) 0%,
+    rgba(245, 158, 11, 0.3) 40%,
+    rgba(245, 158, 11, 0) 70%
+  );
+}
+
+@keyframes gold-shimmer {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 /* 로딩 애니메이션 (●○○ → ●●○ → ●●●) */
@@ -334,6 +712,60 @@
   animation-delay: 0.6s;
 }
 
+/* v1.2: Ink Spread 애니메이션 (Bounce 대체) */
+.dotting-dot::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(245, 158, 11, 0.3) 0%,
+    rgba(245, 158, 11, 0.15) 40%,
+    rgba(245, 158, 11, 0) 70%
+  );
+  opacity: 0;
+  transform: scale(0.6) translateZ(0);
+  pointer-events: none;
+}
+
+.dotting-dot.is-filling::after {
+  animation: dotting-ink-spread 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.dotting-dot.filled::after {
+  animation: breathing-glow 2s ease-in-out infinite;
+}
+
+@keyframes dotting-ink-spread {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateZ(0);
+  }
+  40% {
+    opacity: 0.8;
+    transform: scale(0.95) translateZ(0);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1.02) translateZ(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.4) translateZ(0);
+  }
+}
+
+@keyframes breathing-glow {
+  0%, 100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* v1.2: 레거시 로딩 애니메이션 (유지) */
 @keyframes dotting-pulse {
   0%, 100% {
     background-color: var(--dot-inactive);
@@ -440,4 +872,623 @@
 .dotting-wordmark:hover {
   opacity: 0.8;
   transition: opacity 0.2s ease;
+}
+
+/* ===== 섹션 애니메이션 ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* 스크롤 시 나타나는 애니메이션 (Intersection Observer 필요) */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 순차적 딜레이 */
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+
+/* ===== 고급 ●●● 시그니처 ===== */
+.dotting-signature {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dotting-signature span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--dotting-warm-amber);
+}
+
+.dotting-signature span:nth-child(2) {
+  opacity: 0.6;
+}
+
+.dotting-signature span:nth-child(3) {
+  opacity: 0.3;
+}
+
+/* ============================================
+   AudioMomentPlayer Styles
+   ============================================ */
+
+.audio-moment-player {
+  min-height: 100vh;
+  background: var(--dotting-soft-cream);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================
+   1. Splash Screen: "목소리를 깨우는 의식"
+   ============================================ */
+
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dotting-soft-cream);
+  z-index: 50;
+  transition: opacity 0.2s ease-out;
+}
+
+.splash-screen.fading {
+  opacity: 0;
+  pointer-events: none;
+  animation: splashFadeOut 0.2s ease-out forwards;
+  animation-delay: 0.2s;
+}
+
+@keyframes splashFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.splash-content {
+  text-align: center;
+  padding: 24px;
+  max-width: 400px;
+}
+
+/* 책 일러스트 Breathing */
+.book-illustration {
+  margin-bottom: 32px;
+  animation: breathing 4s ease-in-out infinite;
+}
+
+@keyframes breathing {
+  0%, 100% { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+  50% { 
+    transform: scale(1.01); 
+    opacity: 0.95; 
+  }
+}
+
+.book-icon {
+  font-size: 64px;
+  filter: grayscale(0.3);
+}
+
+.splash-title {
+  font-size: 24px;
+  line-height: 1.35;
+  color: var(--dotting-deep-navy);
+  margin-bottom: 32px;
+  animation: titlePulse 2s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.95; }
+}
+
+/* 재생 버튼 */
+.splash-play-button {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--dotting-deep-navy);
+  color: white;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: buttonPulse 2s ease-in-out infinite;
+  transition: transform 0s;
+}
+
+@keyframes buttonPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.splash-play-button:active {
+  transform: scale(0.92);
+  transition-duration: 0ms;
+}
+
+/* Ripple 효과 */
+.splash-play-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--dotting-warm-amber);
+  opacity: 0;
+  animation: ripple 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  animation-play-state: paused;
+}
+
+.splash-play-button:active::after {
+  animation-play-state: running;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Heritage 금빛 Ripple */
+.splash-play-button.heritage::after {
+  border-color: var(--dotting-warm-amber);
+  box-shadow: 
+    0 0 20px rgba(245, 158, 11, 0.4),
+    0 0 40px rgba(245, 158, 11, 0.2);
+}
+
+.splash-screen.heritage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    rgba(252, 211, 77, 0.05) 0%,
+    transparent 70%
+  );
+  animation: goldPulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes goldPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+.play-icon {
+  font-size: 24px;
+  margin-left: 4px;
+}
+
+.splash-subtitle {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--dotting-muted-gray);
+  margin-bottom: 24px;
+  opacity: 0;
+  animation: subtitleFadeIn 0.4s ease-out forwards;
+  animation-delay: 1s;
+}
+
+@keyframes subtitleFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 점 표시 */
+.splash-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--dotting-muted-gray);
+}
+
+.splash-dots .dot {
+  opacity: 0;
+  animation: dotFadeIn 0.3s ease-out forwards;
+}
+
+.splash-dots .dot:nth-child(1) { animation-delay: 0.3s; }
+.splash-dots .dot:nth-child(2) { animation-delay: 0.6s; }
+.splash-dots .dot:nth-child(3) { animation-delay: 0.9s; }
+
+@keyframes dotFadeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ============================================
+   2. Main Player
+   ============================================ */
+
+.player-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  opacity: 0;
+  animation: playerFadeIn 0.2s ease-in forwards;
+  animation-delay: 0.4s;
+}
+
+@keyframes playerFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.player-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.player-title {
+  font-size: 24px;
+  line-height: 1.35;
+  color: var(--dotting-deep-navy);
+  margin-bottom: 8px;
+}
+
+.player-subtitle {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--dotting-muted-gray);
+}
+
+.player-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 24px;
+}
+
+.current-moment {
+  text-align: center;
+}
+
+.moment-title {
+  font-size: 24px;
+  line-height: 1.35;
+  color: var(--dotting-deep-navy);
+  margin-bottom: 8px;
+}
+
+.moment-number {
+  font-size: 13px;
+  color: var(--dotting-muted-gray);
+}
+
+/* 파형 시각화 */
+.waveform {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+}
+
+.waveform-bars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 100%;
+}
+
+.waveform-bar {
+  width: 3px;
+  height: 20%;
+  background: var(--dotting-muted-gray);
+  border-radius: 2px;
+  opacity: 0.3;
+  transition: height 0.1s ease, opacity 0.1s ease;
+}
+
+.waveform.playing .waveform-bar {
+  animation: waveform 1.2s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+.waveform.playing .waveform-bar:nth-child(odd) {
+  animation-delay: 0.1s;
+}
+
+@keyframes waveform {
+  0%, 100% { height: 20%; }
+  50% { height: 80%; }
+}
+
+/* 프로그레스 바 */
+.progress-container {
+  padding: 0 24px;
+}
+
+.progress-bar {
+  height: 4px;
+  background: rgba(107, 114, 128, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--dotting-deep-navy);
+  transition: width 0.1s linear;
+}
+
+.time-display {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--dotting-muted-gray);
+}
+
+/* 컨트롤 버튼 */
+.player-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.control-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1px solid rgba(107, 114, 128, 0.2);
+  background: white;
+  color: var(--dotting-deep-navy);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-button:active {
+  transform: scale(0.95);
+}
+
+.control-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.control-button.primary {
+  width: 64px;
+  height: 64px;
+  background: var(--dotting-deep-navy);
+  color: white;
+  border: none;
+}
+
+/* ============================================
+   3. 전환 효과: Ink Spread + 미리보기
+   ============================================ */
+
+.player-container.transitioning {
+  pointer-events: none;
+}
+
+/* Transition Dot */
+.transition-dot {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg, 
+    #F59E0B 0%, 
+    #FCD34D 50%, 
+    #F59E0B 100%
+  );
+  z-index: 40;
+  animation: inkSpread 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes inkSpread {
+  0% {
+    width: 6px;
+    height: 6px;
+    opacity: 0;
+  }
+  100% {
+    width: 10px;
+    height: 10px;
+    opacity: 1;
+  }
+}
+
+/* Heritage Gold Glow (0.1s 시차) */
+.transition-dot.heritage::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: radial-gradient(
+    circle,
+    rgba(252, 211, 77, 0.35) 0%,
+    rgba(245, 158, 11, 0.2) 50%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  opacity: 0;
+  animation: goldGlow 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 0.1s;
+}
+
+@keyframes goldGlow {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+}
+
+/* 다음 순간 미리보기 */
+.next-moment-preview {
+  position: fixed;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid rgba(107, 114, 128, 0.1);
+  border-radius: 12px;
+  padding: 16px 24px;
+  text-align: center;
+  z-index: 30;
+  opacity: 0;
+  filter: blur(8px);
+  animation: previewSequence 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes previewSequence {
+  /* 0.0s ~ 0.2s: Fade In */
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+    filter: blur(8px);
+  }
+  25% {
+    opacity: 0.5;
+    transform: translateX(-50%) translateY(0);
+    filter: blur(4px);
+  }
+  /* 0.2s ~ 0.6s: Slide Up */
+  75% {
+    opacity: 0.5;
+    transform: translateX(-50%) translateY(-40%);
+    filter: blur(2px);
+  }
+  /* 0.6s ~ 0.8s: Fade Out */
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-40%);
+    filter: blur(2px);
+  }
+}
+
+.preview-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  filter: grayscale(0.3);
+}
+
+.preview-title {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--dotting-deep-navy);
+  margin-bottom: 4px;
+}
+
+.preview-duration {
+  font-size: 13px;
+  color: var(--dotting-muted-gray);
+}
+
+/* ============================================
+   4. 유산 소장 버튼
+   ============================================ */
+
+.player-footer {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(107, 114, 128, 0.1);
+}
+
+.archive-button {
+  width: 100%;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: transparent;
+  border: 1px solid rgba(107, 114, 128, 0.2);
+  border-radius: 8px;
+  color: var(--dotting-muted-gray);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.archive-button:hover {
+  border-color: var(--dotting-deep-navy);
+  color: var(--dotting-deep-navy);
+}
+
+.archive-button:active {
+  transform: scale(0.98);
+}
+
+.archive-icon {
+  font-size: 20px;
+}
+
+.archive-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.archive-subtext {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+/* ============================================
+   반응형
+   ============================================ */
+
+@media (min-width: 768px) {
+  .player-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
 }

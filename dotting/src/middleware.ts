@@ -40,6 +40,11 @@ export async function middleware(request: NextRequest) {
 
   // 로그인한 사용자가 로그인/회원가입 페이지에 접근하면 대시보드로 리다이렉트
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+    // 예외: 이메일 인증 직후(verified=true)에는 로그인 페이지에서 환영 메시지를 볼 수 있도록 허용
+    if (request.nextUrl.searchParams.get('verified') === 'true') {
+      return supabaseResponse
+    }
+
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

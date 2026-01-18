@@ -1007,10 +1007,20 @@ export type Database = {
       orders: {
         Row: {
           amount: number
+          archive_estimated_seconds: number | null
+          archive_generated_at: string | null
+          archive_progress: number | null
+          archive_started_at: string | null
+          archive_status: string | null
+          archive_url: string | null
           cancel_reason: string | null
           cancelled_at: string | null
           completed_at: string | null
           created_at: string
+          dedication: string | null
+          dedication_generated_at: string | null
+          dedication_generation_cost: number | null
+          dedication_suggestions: Json | null
           delivered_at: string | null
           id: string
           is_active: boolean
@@ -1036,10 +1046,20 @@ export type Database = {
         }
         Insert: {
           amount: number
+          archive_estimated_seconds?: number | null
+          archive_generated_at?: string | null
+          archive_progress?: number | null
+          archive_started_at?: string | null
+          archive_status?: string | null
+          archive_url?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
           created_at?: string
+          dedication?: string | null
+          dedication_generated_at?: string | null
+          dedication_generation_cost?: number | null
+          dedication_suggestions?: Json | null
           delivered_at?: string | null
           id?: string
           is_active?: boolean
@@ -1065,10 +1085,20 @@ export type Database = {
         }
         Update: {
           amount?: number
+          archive_estimated_seconds?: number | null
+          archive_generated_at?: string | null
+          archive_progress?: number | null
+          archive_started_at?: string | null
+          archive_status?: string | null
+          archive_url?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
           created_at?: string
+          dedication?: string | null
+          dedication_generated_at?: string | null
+          dedication_generation_cost?: number | null
+          dedication_suggestions?: Json | null
           delivered_at?: string | null
           id?: string
           is_active?: boolean
@@ -1925,6 +1955,146 @@ export type Order = Tables<'orders'>
 export type OrderStatusLog = Tables<'order_status_logs'>
 export type Claim = Tables<'claims'>
 export type ClaimLog = Tables<'claim_logs'>
+
+// ============================================================
+// DOTTING v1.2 → v1.3: 멀티모달 메시지 타입 확장
+// 용어 정제: "보물(Treasure)" → "간직할 순간(Moment)"
+// ============================================================
+
+/**
+ * 간직할 순간(Moment) 메타데이터 (v1.3 신규)
+ * 
+ * 철학: "순간(Moment)"은 DOTTING의 점(●) 아이덴티티와 연결
+ * - 하나의 점 = 하나의 순간
+ * - 순간들이 모여 선(이야기)이 됨
+ * - 브랜드 메시지: "모든 이야기는 계속됩니다"
+ */
+export interface MomentMetadata {
+  /** 간직할 순간 여부 */
+  is_moment?: boolean
+  
+  /** 순간 순서 (1부터 시작) */
+  moment_index?: number
+  
+  /** 표시 시각 (ISO 8601) */
+  moment_marked_at?: string
+  
+  /** 사용자 지정 제목 (선택) */
+  moment_title?: string
+}
+
+/**
+ * 보물(Treasure) 메타데이터 (v1.2 레거시)
+ * @deprecated v1.3부터 MomentMetadata 사용 권장
+ * 
+ * 하위 호환성을 위해 유지되며, normalizeMomentData()로 자동 변환됨
+ */
+export interface TreasureMetadata {
+  /** @deprecated Use MomentMetadata.is_moment */
+  is_treasure?: boolean
+  
+  /** @deprecated Use MomentMetadata.moment_index */
+  treasure_index?: number
+  
+  /** @deprecated Use MomentMetadata.moment_marked_at */
+  marked_at?: string
+}
+
+/**
+ * 오디오 메타데이터
+ * - duration: 오디오 길이 (초)
+ * - waveform: 파형 데이터 (0~1 사이 값의 배열, 최대 50개)
+ */
+export interface AudioMetadata {
+  /** 오디오 길이 (초) */
+  duration?: number
+  
+  /** 파형 데이터 (0~1 사이 값, 최대 50개) */
+  waveform?: number[]
+  
+  /** @deprecated v1.2에서 제거됨. MomentMetadata.is_moment 사용 */
+  is_highlight?: boolean
+}
+
+/**
+ * 확장된 메시지 메타데이터 타입
+ * - messages.meta JSON 필드의 타입 안전성 확보
+ * - 신규(Moment) + 레거시(Treasure) 필드 모두 지원
+ */
+export interface MessageMetadata 
+  extends MomentMetadata, 
+          TreasureMetadata, 
+          AudioMetadata {
+  [key: string]: unknown
+}
+
+/**
+ * 유니버설 메시지 타입
+ * - 텍스트/음성 하이브리드 지원
+ * - content: 항상 존재 (음성의 경우 STT 결과 또는 요약)
+ * - audio_url: 음성 메시지인 경우에만 존재
+ */
+export type UniversalMessage = Message & {
+  meta?: MessageMetadata
+}
+
+// ============================================================
+// 유틸리티 함수: 레거시 데이터 정규화
+// ============================================================
+
+/**
+ * 레거시 Treasure 데이터를 Moment 형식으로 정규화
+ * 
+ * 사용 예시:
+ * ```typescript
+ * const moment = normalizeMomentData(message.meta)
+ * if (moment.is_moment) {
+ *   console.log(`순간 ${moment.moment_index}`)
+ * }
+ * ```
+ * 
+ * @param meta - 메시지 메타데이터 (nullable)
+ * @returns 정규화된 MomentMetadata
+ */
+export function normalizeMomentData(meta?: MessageMetadata): MomentMetadata {
+  if (!meta) return {}
+  
+  return {
+    is_moment: meta.is_moment ?? meta.is_treasure,
+    moment_index: meta.moment_index ?? meta.treasure_index,
+    moment_marked_at: meta.moment_marked_at ?? meta.marked_at,
+    moment_title: meta.moment_title,
+  }
+}
+
+/**
+ * 메시지가 "간직할 순간"인지 확인
+ * 
+ * @param message - 확인할 메시지
+ * @returns 간직할 순간 여부
+ */
+export function isMoment(message: UniversalMessage): boolean {
+  const moment = normalizeMomentData(message.meta)
+  return moment.is_moment === true
+}
+
+/**
+ * 메시지 배열을 순간 순서대로 정렬
+ * 
+ * @param messages - 정렬할 메시지 배열
+ * @returns moment_index 기준 오름차순 정렬된 배열
+ */
+export function sortByMomentIndex(messages: UniversalMessage[]): UniversalMessage[] {
+  return [...messages].sort((a, b) => {
+    const momentA = normalizeMomentData(a.meta)
+    const momentB = normalizeMomentData(b.meta)
+    
+    const indexA = momentA.moment_index ?? 0
+    const indexB = momentB.moment_index ?? 0
+    
+    return indexA - indexB
+  })
+}
 
 // Insert type aliases
 export type InsertTables<T extends keyof Database['public']['Tables']> = 

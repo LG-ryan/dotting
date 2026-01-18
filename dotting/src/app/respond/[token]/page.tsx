@@ -518,7 +518,7 @@ export default function RespondPage() {
     )
   }
 
-  // 마지막 AI 질문과 마지막 사용자 답변 찾기
+  // 마지막 도팅 질문과 마지막 사용자 답변 찾기
   const lastAiMessage = messages.filter(m => m.role === 'ai').slice(-1)[0]
   const lastUserMessage = messages.filter(m => m.role === 'user').slice(-1)[0]
   const waitingForAnswer = messages.length > 0 && messages[messages.length - 1]?.role === 'ai'
@@ -689,19 +689,19 @@ export default function RespondPage() {
               <button
                 onClick={handleTrySend}
                 disabled={!inputText.trim() || sending || generating}
-                className={`w-full ${s.buttonHeight} ${s.buttonText} font-semibold ${s.card} transition-all border-2`}
+                className={`w-full h-14 text-[17px] font-semibold ${s.card} transition-all border-2 rounded-xl touch-action-manipulation active:scale-[0.98]`}
                 style={{
                   backgroundColor: sending 
-                    ? '#C49660' 
+                    ? 'var(--dotting-warm-amber)' 
                     : inputText.trim() 
-                      ? '#D4A574' 
-                      : '#F5EDE3',
+                      ? 'var(--dotting-warm-amber)' 
+                      : 'var(--dotting-warm-gray)',
                   borderColor: sending 
-                    ? '#8B6F47' 
+                    ? 'var(--dotting-warm-amber)' 
                     : inputText.trim() 
-                      ? '#C49660' 
-                      : '#D4C4B0',
-                  color: inputText.trim() || sending ? '#1E3A5F' : '#8B7355',
+                      ? 'var(--dotting-warm-amber)' 
+                      : 'var(--dotting-border)',
+                  color: inputText.trim() || sending ? 'var(--dotting-deep-navy)' : 'var(--dotting-muted-gray)',
                   cursor: sending ? 'wait' : inputText.trim() ? 'pointer' : 'not-allowed'
                 }}
               >
@@ -713,9 +713,9 @@ export default function RespondPage() {
 
         {/* 다음 질문 준비 중 */}
         {generating && (
-          <div className={`bg-stone-100 ${s.card} ${s.spacing} text-center`}>
-            <div className="w-8 h-8 border-3 border-stone-300 border-t-stone-600 rounded-full animate-spin mx-auto mb-3" />
-            <p className={`${s.bodyText} text-stone-600`}>
+          <div className={`bg-[var(--dotting-warm-gray)] ${s.card} ${s.spacing} text-center`}>
+            <div className="w-8 h-8 border-3 border-[var(--dotting-border)] border-t-[var(--dotting-deep-navy)] rounded-full animate-spin mx-auto mb-3" />
+            <p className={`${s.bodyText} text-[var(--dotting-muted-gray)]`}>
               다음 질문을 준비하고 있어요...
             </p>
           </div>

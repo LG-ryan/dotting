@@ -151,18 +151,30 @@ export default function AdminOrdersPage() {
   ) => {
     setActionLoading(true)
     try {
-      const res = await fetch(`/api/admin/orders/${orderId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          toStatus,
-          ...extraData,
-        }),
-      })
-      
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to update status')
+      // 결제 확인 시 이메일 발송 API 호출
+      if (toStatus === 'paid') {
+        const confirmRes = await fetch(`/api/orders/${orderId}/confirm-payment`, {
+          method: 'POST',
+        })
+        
+        if (!confirmRes.ok) {
+          throw new Error('Failed to confirm payment')
+        }
+      } else {
+        // 일반 상태 변경
+        const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            toStatus,
+            ...extraData,
+          }),
+        })
+        
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || 'Failed to update status')
+        }
       }
       
       await fetchOrders()

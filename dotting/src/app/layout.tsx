@@ -39,6 +39,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${notoSerifKR.variable} antialiased`}>
+        <div className="texture-overlay" />
         {children}
       </body>
     </html>

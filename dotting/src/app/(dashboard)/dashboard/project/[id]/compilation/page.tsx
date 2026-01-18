@@ -50,6 +50,7 @@ export default function CompilationPage() {
   
   const [viewMode, setViewMode] = useState<ViewMode>(initialMode)
   const [reviewStatus, setReviewStatus] = useState<ReviewStatus | null>(null)
+  const [packageType, setPackageType] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   
   // 컴파일 상태 로드
@@ -74,6 +75,15 @@ export default function CompilationPage() {
             setViewMode('editor')
           } else {
             setViewMode('viewer')
+          }
+        }
+
+        // 세션 정보 조회 (패키지 타입 확인)
+        const sessionRes = await fetch(`/api/session/${sessionId}`)
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json()
+          if (sessionData.activeOrder) {
+            setPackageType(sessionData.activeOrder.package)
           }
         }
       } catch (error) {
@@ -203,6 +213,8 @@ export default function CompilationPage() {
         {viewMode === 'pdf' && (
           <PdfPreview
             compilationId={compilationId}
+            sessionId={sessionId}
+            packageType={packageType || undefined}
             onBack={handleNavigateToViewer}
             onPrintConfirm={handlePrintConfirm}
           />

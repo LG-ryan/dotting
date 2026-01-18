@@ -113,6 +113,42 @@ export async function POST(
     
     console.log(`[DOTTING PDF Confirm] ${compilationId} confirmed by ${user.id}`)
     
+    // Heritage 패키지의 경우 헌정사 생성 트리거 (백그라운드)
+    try {
+      const { data: session } = await supabase
+        .from('sessions')
+        .select('id, orders!orders_session_id_fkey(id, package)')
+        .eq('compilations.id', compilationId)
+        .single()
+
+      if (session) {
+        const sessionData = session as unknown as {
+          id: string
+          orders: Array<{ id: string; package: string }>
+        }
+        
+        const heritageOrder = sessionData.orders?.find(o => o.package === 'premium')
+        
+        if (heritageOrder) {
+          console.log(`[DOTTING PDF Confirm] Heritage 패키지 감지, 헌정사 생성 시작: ${heritageOrder.id}`)
+          
+          // 백그라운드로 헌정사 생성 (await 하지 않음)
+          fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ai/dedication/generate`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': request.headers.get('Authorization') || ''
+            },
+            body: JSON.stringify({ orderId: heritageOrder.id })
+          }).catch(err => {
+            console.error('[DOTTING PDF Confirm] 헌정사 생성 트리거 실패:', err)
+          })
+        }
+      }
+    } catch (error) {
+      console.error('[DOTTING PDF Confirm] 헌정사 트리거 오류 (무시):', error)
+    }
+    
     return NextResponse.json({
       success: true,
       confirmed_at: now,

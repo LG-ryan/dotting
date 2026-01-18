@@ -9,7 +9,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { PACKAGES, PACKAGE_PRICES } from '@/lib/payment-constants'
+import { PACKAGES, PACKAGE_PRICES, PACKAGE_ORIGINAL_PRICES } from '@/lib/payment-constants'
 import type { PackageType } from '@/types/database'
 
 interface PaymentModalProps {
@@ -61,6 +61,8 @@ export function PaymentModal({
       setStep('done')
       onPaymentRequested?.(data.orderId)
     } catch (err) {
+      // Toast로 대체 예정
+      console.error('Order creation failed:', err)
       alert(err instanceof Error ? err.message : '주문 생성에 실패했습니다')
     } finally {
       setLoading(false)
@@ -68,22 +70,22 @@ export function PaymentModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/50" 
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="p-6 border-b border-[var(--dotting-border)]">
-          <h2 className="text-xl font-bold text-[var(--dotting-deep-navy)]">
+          <h2 className="text-[24px] leading-[1.35] font-bold text-[var(--dotting-deep-navy)]">
             {step === 'done' ? '결제 안내' : '패키지 선택'}
           </h2>
-          <p className="text-sm text-[var(--dotting-muted-text)] mt-1">
-            {subjectName}의 이야기를 책으로 만들어드립니다
+          <p className="text-[17px] leading-[1.6] text-[var(--dotting-muted-gray)] mt-2">
+            {subjectName}님의 이야기를 책으로 만들어드립니다
           </p>
         </div>
 
@@ -91,6 +93,13 @@ export function PaymentModal({
         <div className="p-6">
           {step === 'select' && (
             <>
+              {/* Early Bird 안내 */}
+              <div className="mb-4 p-3 rounded-xl bg-[var(--dotting-warm-gold)]/10 border border-[var(--dotting-warm-gold)]/30">
+                <p className="text-[13px] text-[var(--dotting-deep-navy)] text-center font-medium">
+                  얼리버드 특가 진행 중 · 모든 패키지 33% 할인
+                </p>
+              </div>
+
               {/* Package Options */}
               <div className="space-y-4 mb-6">
                 {(Object.keys(PACKAGES) as PackageType[]).map((pkg) => {
@@ -100,31 +109,95 @@ export function PaymentModal({
                     <button
                       key={pkg}
                       onClick={() => setSelectedPackage(pkg)}
-                      className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                      className={`w-full p-4 rounded-xl border-2 text-left transition-all relative group ${
                         isSelected 
-                          ? 'border-[var(--dotting-warm-gold)] bg-[var(--dotting-warm-gold)]/5' 
-                          : 'border-[var(--dotting-border)] hover:border-[var(--dotting-warm-gold)]/50'
+                          ? pkg === 'premium' 
+                            ? 'border-[var(--dotting-warm-gold)] bg-gradient-to-br from-[var(--dotting-warm-gold)]/8 to-[var(--dotting-warm-gold)]/15 shadow-lg' 
+                            : pkg === 'standard'
+                            ? 'border-[var(--dotting-deep-navy)] bg-[var(--dotting-deep-navy)]/5 shadow-md'
+                            : 'border-[var(--dotting-ocean-teal)] bg-[var(--dotting-ocean-teal)]/5 shadow-sm'
+                          : 'border-[var(--dotting-border)] hover:border-[var(--dotting-deep-navy)]/30'
                       }`}
+                      style={isSelected && pkg === 'premium' ? {
+                        boxShadow: '0 4px 20px rgba(245, 158, 11, 0.2), 0 0 0 1px rgba(245, 158, 11, 0.15) inset'
+                      } : undefined}
                     >
                       <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className={`font-bold ${isSelected ? 'text-[var(--dotting-deep-navy)]' : 'text-[var(--dotting-muted-text)]'}`}>
-                            {info.name}
-                          </h3>
-                          <p className="text-sm text-[var(--dotting-muted-text)] mt-1">
-                            {info.description}
-                          </p>
+                        <div className="flex items-center gap-2">
+                          {/* 패키지 점 표시 */}
+                          <div className="flex gap-1">
+                            {pkg === 'pdf_only' && (
+                              <>
+                                <span className={`w-2 h-2 rounded-full transition-all ${isSelected ? 'bg-[var(--dotting-ocean-teal)]' : 'bg-[var(--dotting-muted-gray)]/30'}`} />
+                                <span className="w-2 h-2 rounded-full bg-[var(--dotting-muted-gray)]/20" />
+                                <span className="w-2 h-2 rounded-full bg-[var(--dotting-muted-gray)]/20" />
+                              </>
+                            )}
+                            {pkg === 'standard' && (
+                              <>
+                                <span className={`w-2 h-2 rounded-full transition-all ${isSelected ? 'bg-[var(--dotting-deep-navy)]' : 'bg-[var(--dotting-muted-gray)]/30'}`} />
+                                <span className={`w-2 h-2 rounded-full transition-all ${isSelected ? 'bg-[var(--dotting-deep-navy)]' : 'bg-[var(--dotting-muted-gray)]/30'}`} />
+                                <span className="w-2 h-2 rounded-full bg-[var(--dotting-muted-gray)]/20" />
+                              </>
+                            )}
+                            {pkg === 'premium' && (
+                              <>
+                                <span 
+                                  className={`w-2 h-2 rounded-full transition-all ${isSelected ? 'animate-pulse' : ''}`}
+                                  style={isSelected ? {
+                                    background: 'linear-gradient(135deg, #F59E0B 0%, #FCD34D 50%, #F59E0B 100%)',
+                                    boxShadow: '0 0 8px rgba(245, 158, 11, 0.4)'
+                                  } : { background: 'rgba(156, 163, 175, 0.3)' }}
+                                />
+                                <span 
+                                  className={`w-2 h-2 rounded-full transition-all ${isSelected ? 'animate-pulse' : ''}`}
+                                  style={isSelected ? {
+                                    background: 'linear-gradient(135deg, #F59E0B 0%, #FCD34D 50%, #F59E0B 100%)',
+                                    boxShadow: '0 0 8px rgba(245, 158, 11, 0.4)',
+                                    animationDelay: '0.2s'
+                                  } : { background: 'rgba(156, 163, 175, 0.3)' }}
+                                />
+                                <span 
+                                  className={`w-2 h-2 rounded-full transition-all ${isSelected ? 'animate-pulse' : ''}`}
+                                  style={isSelected ? {
+                                    background: 'linear-gradient(135deg, #F59E0B 0%, #FCD34D 50%, #F59E0B 100%)',
+                                    boxShadow: '0 0 8px rgba(245, 158, 11, 0.4)',
+                                    animationDelay: '0.4s'
+                                  } : { background: 'rgba(156, 163, 175, 0.3)' }}
+                                />
+                              </>
+                            )}
+                          </div>
+                          <div>
+                            <h3 className={`text-[17px] font-bold transition-all ${
+                              isSelected 
+                                ? 'text-[var(--dotting-deep-navy)]'
+                                : 'text-[var(--dotting-muted-gray)]'
+                            }`}>
+                              {info.name}
+                            </h3>
+                            <p className="text-[14px] text-[var(--dotting-muted-gray)] mt-1">
+                              {info.description}
+                            </p>
+                          </div>
                         </div>
                         <div className="text-right">
-                          <p className={`text-lg font-bold ${isSelected ? 'text-[var(--dotting-deep-navy)]' : 'text-[var(--dotting-muted-text)]'}`}>
+                          <p className={`text-[18px] font-bold transition-all ${
+                            isSelected 
+                              ? 'text-[var(--dotting-deep-navy)]'
+                              : 'text-[var(--dotting-muted-gray)]'
+                          }`}>
                             ₩{formatPrice(info.price)}
+                          </p>
+                          <p className="text-[12px] text-[var(--dotting-muted-gray)] line-through">
+                            ₩{formatPrice(PACKAGE_ORIGINAL_PRICES[pkg])}
                           </p>
                         </div>
                       </div>
                       <ul className="mt-3 space-y-1">
                         {info.features.map((feature, i) => (
-                          <li key={i} className="text-sm text-[var(--dotting-muted-text)] flex items-center gap-2">
-                            <svg className="w-4 h-4 text-[var(--dotting-warm-gold)]" fill="currentColor" viewBox="0 0 20 20">
+                          <li key={i} className="text-[15px] text-[var(--dotting-deep-navy)] flex items-start gap-2">
+                            <svg className="w-4 h-4 text-[var(--dotting-ocean-teal)] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                             {feature}
@@ -139,7 +212,8 @@ export function PaymentModal({
               {/* CTA */}
               <Button
                 onClick={() => setStep('confirm')}
-                className="w-full h-12 bg-[var(--dotting-warm-gold)] text-[var(--dotting-deep-navy)] hover:bg-[#C49660] font-medium"
+                size="default"
+                className="w-full bg-[var(--dotting-warm-gold)] text-[var(--dotting-deep-navy)] hover:bg-[#C49660] font-medium"
               >
                 {PACKAGES[selectedPackage].name} 선택 - ₩{formatPrice(PACKAGE_PRICES[selectedPackage])}
               </Button>
@@ -161,21 +235,30 @@ export function PaymentModal({
                 </div>
               </div>
 
+
               {/* 안내 문구 */}
-              <div className="space-y-4 mb-6 text-sm text-[var(--dotting-muted-text)]">
-                <p>
-                  결제 완료 후 링크를 보내면 책 제작이 시작됩니다.
-                </p>
-                <p>
-                  • PDF 다운로드 전 100% 환불 가능<br />
-                  • 실물 책은 인쇄 불량에 한해 교환
-                </p>
+              <div className="space-y-3 mb-6">
+                <div className="p-3 rounded-xl bg-[var(--dotting-soft-cream)]">
+                  <p className="text-[14px] text-[var(--dotting-deep-navy)] leading-relaxed">
+                    결제 완료 후 링크를 보내드리면<br />
+                    책 제작이 시작됩니다
+                  </p>
+                </div>
+                <div className="text-[13px] text-[var(--dotting-muted-gray)] space-y-1">
+                  <p>• 결제 후 24시간 이내 + 인터뷰 미시작 시 100% 환불</p>
+                  <p>• 인터뷰 시작 후에는 환불 불가</p>
+                  <p>• 실물 책은 인쇄 불량에 한해 교환</p>
+                  {selectedPackage === 'premium' && (
+                    <p>• 헌정사는 PDF 확인 후 입력하실 수 있습니다</p>
+                  )}
+                </div>
               </div>
 
               {/* CTA */}
               <div className="flex gap-3">
                 <Button
                   variant="outline"
+                  size="default"
                   onClick={() => setStep('select')}
                   className="flex-1"
                 >
@@ -184,9 +267,19 @@ export function PaymentModal({
                 <Button
                   onClick={handleCreateOrder}
                   disabled={loading}
-                  className="flex-1 bg-[var(--dotting-warm-gold)] text-[var(--dotting-deep-navy)] hover:bg-[#C49660]"
+                  size="default"
+                  className={`flex-1 transition-all ${
+                    selectedPackage === 'premium'
+                      ? 'bg-gradient-to-r from-[var(--dotting-warm-gold)] to-[#FCD34D] text-[var(--dotting-deep-navy)] hover:shadow-lg'
+                      : selectedPackage === 'standard'
+                      ? 'bg-[var(--dotting-deep-navy)] text-white hover:bg-[var(--dotting-deep-navy)]/90'
+                      : 'bg-[var(--dotting-ocean-teal)] text-white hover:bg-[var(--dotting-ocean-teal)]/90'
+                  }`}
+                  style={selectedPackage === 'premium' && !loading ? {
+                    boxShadow: '0 4px 16px rgba(245, 158, 11, 0.25)'
+                  } : undefined}
                 >
-                  {loading ? '처리 중...' : '결제 진행'}
+                  {loading ? '처리 중...' : selectedPackage === 'premium' ? '헤리티지 제작 시작' : '결제 진행'}
                 </Button>
               </div>
             </>

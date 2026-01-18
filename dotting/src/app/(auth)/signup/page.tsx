@@ -98,7 +98,7 @@ export default function SignupPage() {
         <CardFooter>
           <Link href="/login" className="w-full">
             <Button variant="outline" className="w-full h-11 border-[var(--dotting-warm-gold)] text-[var(--dotting-deep-navy)] hover:bg-[var(--dotting-warm-gold)]/10">
-              로그인 페이지로 돌아가기
+              서재 입구로 돌아가기
             </Button>
           </Link>
         </CardFooter>
@@ -183,17 +183,18 @@ export default function SignupPage() {
           </p>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button 
-            type="submit" 
-            className="w-full h-11 bg-[var(--dotting-warm-gold)] hover:bg-[#C49660] text-[var(--dotting-deep-navy)] font-semibold"
+          <Button
+            type="submit"
+            size="default"
+            className="w-full bg-[var(--dotting-warm-gold)] hover:bg-[#C49660] text-[var(--dotting-deep-navy)] font-semibold"
             disabled={loading}
           >
-            {loading ? '가입 중...' : '회원가입'}
+            {loading ? '준비 중...' : '새 책 꺼내기'}
           </Button>
           <p className="text-sm text-center text-[var(--dotting-muted-text)]">
-            이미 계정이 있으신가요?{' '}
+            이미 서재가 있으신가요?{' '}
             <Link href="/login" className="font-medium text-[var(--dotting-deep-navy)] hover:underline">
-              로그인
+              서재 들어가기
             </Link>
           </p>
         </CardFooter>
