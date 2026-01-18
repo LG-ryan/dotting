@@ -214,7 +214,7 @@ export async function runCompileJob(params: RunCompileJobParams): Promise<RunCom
         .from('compilations')
         .update({ 
           status: 'completed',
-          result_meta: resultMeta,
+          result_meta: JSON.parse(JSON.stringify(resultMeta)),
           progress: {
             phase: 'C',
             percent: 100,
@@ -283,7 +283,7 @@ async function updateProgress(
   
   await supabase
     .from('compilations')
-    .update({ progress })
+    .update({ progress: JSON.parse(JSON.stringify(progress)) })
     .eq('id', compilationId)
   
   console.log(`[DOTTING Runner] Phase ${phase}: ${PHASE_MESSAGES[phase]}`)
@@ -296,23 +296,26 @@ async function markFailed(
   errorMessage: string,
   errorDetail: Record<string, unknown>
 ): Promise<void> {
+  const errorDetailJson = {
+    code: errorCode,
+    message: errorMessage,
+    ...errorDetail,
+    timestamp: new Date().toISOString()
+  }
+  const progressJson = {
+    phase: errorDetail.phase || null,
+    percent: 0,
+    message: '실패',
+    updated_at: new Date().toISOString()
+  }
+  
   await supabase
     .from('compilations')
     .update({ 
       status: 'failed',
       error_message: `[${errorCode}] ${errorMessage}`,
-      error_detail: {
-        code: errorCode,
-        message: errorMessage,
-        ...errorDetail,
-        timestamp: new Date().toISOString()
-      },
-      progress: {
-        phase: errorDetail.phase || null,
-        percent: 0,
-        message: '실패',
-        updated_at: new Date().toISOString()
-      }
+      error_detail: JSON.parse(JSON.stringify(errorDetailJson)),
+      progress: JSON.parse(JSON.stringify(progressJson))
     })
     .eq('id', compilationId)
   
@@ -330,7 +333,21 @@ async function fetchEpisodes(
     .order('order_index', { ascending: true })
   
   if (error) throw error
-  return data || []
+  
+  // DB의 nullable 필드를 타입에 맞게 변환
+  return (data || []).map(ep => ({
+    id: ep.id,
+    order_index: ep.order_index,
+    title: ep.title,
+    theme: ep.theme,
+    time_period: ep.time_period,
+    source_message_ids: ep.source_message_ids || [],
+    summary: ep.summary || '',
+    content: ep.content,
+    emotional_weight: ep.emotional_weight ?? 5,
+    has_turning_point: ep.has_turning_point ?? false,
+    has_reflection: ep.has_reflection ?? false,
+  }))
 }
 
 async function fetchMessages(
@@ -358,7 +375,7 @@ async function saveEpisodeSelections(
     episode_id: s.episode_id,
     inclusion_status: s.inclusion_status,
     decision_reason: s.decision_reason,
-    signals: s.signals
+    signals: JSON.parse(JSON.stringify(s.signals))
   }))
   
   const { error } = await supabase

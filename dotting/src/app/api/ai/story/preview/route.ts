@@ -82,23 +82,60 @@ export async function POST(request: NextRequest) {
       styleGuide += `\n강조점: ${emphasisMap[styleOptions.emphasis]}`
     }
 
+    // 답변 개수 및 밀도 분석
+    const answerCount = qaHistory.length
+    const totalLength = qaHistory.reduce((sum, qa) => sum + qa.answer.length, 0)
+    const avgDensity = totalLength / answerCount
+    
+    // 동적 챕터 수 계산
+    let targetChapters = 1
+    if (answerCount < 15) {
+      targetChapters = Math.min(2, Math.ceil(answerCount / 8))
+    } else if (answerCount < 40) {
+      targetChapters = Math.ceil(answerCount / 6)
+    } else {
+      targetChapters = Math.ceil(answerCount / 4)
+    }
+    
+    // Heritage 패키지: Full-fidelity 모드
+    const isHeritage = packageType === 'premium'
+    if (isHeritage) {
+      targetChapters = Math.max(targetChapters, 10)
+    }
+    
+    // 고유명사 추출 (간단한 버전)
+    const properNouns = new Set<string>()
+    qaHistory.forEach(qa => {
+      // 한글 2-4글자 고유명사 추출 (장소, 이름 등)
+      const matches = qa.answer.match(/[가-힣]{2,4}(?:시|구|동|읍|면|리|역|학교|병원|회사)/g)
+      matches?.forEach(noun => properNouns.add(noun))
+    })
+    
     // 피드백 반영
     let feedbackGuide = ''
     if (feedback) {
       feedbackGuide = `\n\n[사용자 피드백 - 반드시 반영하세요]\n${feedback}`
     }
 
-    // 시스템 프롬프트 (미리보기용 - 1챕터만)
-    const systemPrompt = `당신은 가족의 소중한 이야기를 따뜻한 회고록으로 재탄생시키는 작가입니다.
+    // 시스템 프롬프트 (적응형 확장)
+    const systemPrompt = `당신은 가족의 소중한 이야기를 따뜻한 회고록으로 재탄생시키는 DOTTING 편집장입니다.
 
 ## 대상자 정보
 - 이름: ${subjectName}
 - 관계: ${subjectRelation}
+- 총 답변 수: ${answerCount}개
+- 목표 챕터 수: ${targetChapters}개
+- 편집 모드: ${isHeritage ? 'Full-fidelity (Heritage)' : 'Standard'}
 
-## 핵심 역할: "정리"가 아닌 "문학적 재구성"
+## 핵심 역할: "요약"이 아닌 "상술 및 보존 (Expansion)"
 
-당신의 역할은 인터뷰 답변을 그대로 옮기는 것이 아닙니다.
-${subjectName}님의 이야기를 바탕으로, 마치 프로 작가가 쓴 것 같은 감동적인 회고록을 새로 써주세요.
+⚠️ 중요: 당신의 역할은 답변을 요약하는 것이 아닙니다.
+${subjectName}님의 ${answerCount}개 답변을 바탕으로, 각 답변의 고유한 디테일을 보존하면서 문학적으로 확장(Enrich)하세요.
+
+${properNouns.size > 0 ? `## 필수 보존 키워드 (고유명사)
+다음 키워드들은 ${subjectName}님의 고유한 삶의 조각입니다. 반드시 서사에 포함하세요:
+${Array.from(properNouns).slice(0, 20).join(', ')}
+` : ''}
 
 ## 작성 원칙
 
@@ -132,31 +169,39 @@ ${styleGuide}
 - 답변에 없는 감정의 강도(예: "인생에서 가장", "극도로", "평생 잊지 못할" 등)는 임의로 강화하지 마세요.
 ${feedbackGuide}
 
-## 출력 형식 (미리보기 - 1챕터만)
+## 출력 형식 (미리보기 - 첫 번째 챕터)
 
 ---CHAPTER---
 제목: [감성적이고 문학적인 챕터 제목]
 ---CONTENT---
-[500-800자의 문학적 회고록 형식 글]
----END---`
+[${isHeritage ? '800-1200자' : '500-800자'}의 문학적 회고록 형식 글]
+---END---
 
-    const qaText = qaHistory.slice(0, 5).map((qa, i) => 
+⚠️ Heritage 모드: 모든 답변의 디테일을 최대한 보존하며 확장하세요.`
+
+    // 모든 답변 활용 (초반 집중)
+    const previewQACount = Math.min(answerCount, isHeritage ? 10 : 7)
+    const qaText = qaHistory.slice(0, previewQACount).map((qa, i) => 
       `질문 ${i + 1}: ${qa.question}\n답변 ${i + 1}: ${qa.answer}`
     ).join('\n\n')
 
-    const userPrompt = `아래는 ${subjectName}님(${subjectRelation})과의 인터뷰 내용 일부입니다.
+    const userPrompt = `아래는 ${subjectName}님(${subjectRelation})과의 인터뷰 내용입니다.
+총 ${answerCount}개 답변 중 초반 ${previewQACount}개를 미리보기로 제공합니다.
 
 ${qaText}
 
 ---
 
-위 인터뷰의 초반부를 바탕으로 **첫 번째 챕터**를 작성해주세요.
-이 챕터는 주로 어린 시절이나 성장 배경을 다룹니다.
+위 인터뷰를 바탕으로 **첫 번째 챕터**를 작성해주세요.
+(전체 ${targetChapters}개 챕터 중 첫 번째)
 
-⚠️ 중요: 이 챕터에서는 인터뷰 초반에 언급된 사건과 시기만 사용하세요.
-후반 인생이나 현재 시점의 이야기는 포함하지 마세요.
+## 작성 지침
+1. 각 답변의 고유한 디테일(장소, 이름, 시기, 사물)을 반드시 보존하세요
+2. 한 문장 답변은 한 문단으로 확장(Expand)하세요
+3. "요약"이 아닌 "상술"을 목표로 하세요
+4. 추상적 표현("사랑", "추억") 대신 구체적 묘사를 우선하세요
 
-기억하세요: "정리"가 아니라 "문학적 재탄생"입니다.`
+기억하세요: "${answerCount}개의 소중한 기억을 연결하여 ${targetChapters}개의 챕터로 갈무리"합니다.`
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -298,6 +343,12 @@ ${qaText}
       chapter,
       attempts: currentAttempts,
       sourceIndices,
+      metadata: {
+        answerCount,
+        targetChapters,
+        isHeritage,
+        avgDensity: Math.round(avgDensity),
+      },
       usage: {
         prompt_tokens: usage?.prompt_tokens,
         completion_tokens: usage?.completion_tokens,

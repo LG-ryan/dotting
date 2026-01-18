@@ -18,10 +18,11 @@ export async function POST(request: NextRequest) {
   
   // 요청 바디 파싱
   const body = await request.json()
-  const { sessionId, packageType, amount } = body as {
+  const { sessionId, packageType, amount, dedication } = body as {
     sessionId: string
     packageType: PackageType
     amount: number
+    dedication?: string
   }
   
   if (!sessionId || !packageType) {
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
       status: 'pending_payment',
       payment_method: 'manual',
       payment_requested_at: new Date().toISOString(),
+      dedication: dedication || null,
     })
     .select()
     .single()

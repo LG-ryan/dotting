@@ -85,6 +85,8 @@ export async function checkPaymentGate(
  * 결제 게이트 미들웨어 (API Route에서 사용)
  * 결제가 필요하면 403 응답
  * 
+ * 개발/로컬 환경에서는 결제 없이 테스트 가능 (NEXT_PUBLIC_APP_URL이 localhost면 우회)
+ * 
  * @param sessionId - 세션 ID
  * @param supabaseClient - 선택적 Supabase 클라이언트 (응답자 API용 service_role)
  */
@@ -92,6 +94,12 @@ export async function requirePayment(
   sessionId: string,
   supabaseClient?: ReturnType<typeof createClient> extends Promise<infer T> ? T : never
 ): Promise<{ allowed: true } | { allowed: false; response: Response }> {
+  // 개발 환경에서는 결제 게이트 우회 (로컬 테스트용)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  if (appUrl.includes('localhost') || appUrl.includes('127.0.0.1')) {
+    return { allowed: true };
+  }
+  
   const result = await checkPaymentGate(sessionId, supabaseClient);
 
   if (result.allowed) {

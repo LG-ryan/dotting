@@ -25,8 +25,12 @@ const PdfPreview = dynamic(
     loading: () => (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-800 rounded-full mx-auto mb-4" />
-          <p className="text-gray-600">PDF 미리보기 로딩 중...</p>
+          <div className="dotting-dots dotting-dots--loading dotting-dots--lg mx-auto mb-4">
+            <span className="dotting-dot" />
+            <span className="dotting-dot" />
+            <span className="dotting-dot" />
+          </div>
+          <p className="text-[var(--dotting-muted-gray)]">PDF를 준비하고 있어요</p>
         </div>
       </div>
     )
@@ -46,6 +50,7 @@ export default function CompilationPage() {
   
   const [viewMode, setViewMode] = useState<ViewMode>(initialMode)
   const [reviewStatus, setReviewStatus] = useState<ReviewStatus | null>(null)
+  const [packageType, setPackageType] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   
   // 컴파일 상태 로드
@@ -70,6 +75,15 @@ export default function CompilationPage() {
             setViewMode('editor')
           } else {
             setViewMode('viewer')
+          }
+        }
+
+        // 세션 정보 조회 (패키지 타입 확인)
+        const sessionRes = await fetch(`/api/session/${sessionId}`)
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json()
+          if (sessionData.activeOrder) {
+            setPackageType(sessionData.activeOrder.package)
           }
         }
       } catch (error) {
@@ -98,8 +112,12 @@ export default function CompilationPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-800 rounded-full mx-auto mb-4" />
-          <p className="text-gray-600">로딩 중...</p>
+          <div className="dotting-dots dotting-dots--loading dotting-dots--lg mx-auto mb-4">
+            <span className="dotting-dot" />
+            <span className="dotting-dot" />
+            <span className="dotting-dot" />
+          </div>
+          <p className="text-[var(--dotting-muted-gray)]">준비하고 있어요</p>
         </div>
       </div>
     )
@@ -195,6 +213,8 @@ export default function CompilationPage() {
         {viewMode === 'pdf' && (
           <PdfPreview
             compilationId={compilationId}
+            sessionId={sessionId}
+            packageType={packageType || undefined}
             onBack={handleNavigateToViewer}
             onPrintConfirm={handlePrintConfirm}
           />

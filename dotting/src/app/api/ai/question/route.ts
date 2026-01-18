@@ -12,10 +12,55 @@ import {
 } from '@/lib/interview-os'
 import { logQuestionGenerated, logFallbackQuestionUsed } from '@/lib/analytics'
 import { requirePayment } from '@/lib/payment-gate'
+import { FREE_QUESTIONS_LIMIT, LIMIT_MESSAGES, PAID_ORDER_STATUSES } from '@/lib/free-tier-limits'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
+
+// 세션 소유권 확인 + AI 질문 수 조회
+async function verifySessionAndGetCount(
+  sessionId: string, 
+  userId: string
+): Promise<{ authorized: boolean; questionCount: number }> {
+  const supabase = await createClient()
+  
+  // 세션 소유권 확인
+  const { data: session } = await supabase
+    .from('sessions')
+    .select('user_id')
+    .eq('id', sessionId)
+    .single()
+  
+  if (!session || session.user_id !== userId) {
+    return { authorized: false, questionCount: 0 }
+  }
+  
+  // 사용자 답변 수 조회 (무료 제한 체크용 - 사용자 관점에서 직관적)
+  const { count } = await supabase
+    .from('messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', sessionId)
+    .eq('role', 'user')
+    .is('deleted_at', null)
+  
+  return { authorized: true, questionCount: count || 0 }
+}
+
+// 결제 완료된 세션인지 확인
+async function isPaidSession(sessionId: string): Promise<boolean> {
+  const supabase = await createClient()
+  const { data: order } = await supabase
+    .from('orders')
+    .select('status')
+    .eq('session_id', sessionId)
+    .eq('is_active', true)
+    .in('status', [...PAID_ORDER_STATUSES])
+    .limit(1)
+    .single()
+  
+  return !!order
+}
 
 interface Message {
   role: 'ai' | 'user'
@@ -39,7 +84,7 @@ async function getInterviewState(sessionId: string): Promise<InterviewState> {
     .eq('id', sessionId)
     .single()
   
-  return data?.interview_state || DEFAULT_INTERVIEW_STATE
+  return (data?.interview_state as unknown as InterviewState) || DEFAULT_INTERVIEW_STATE
 }
 
 // 세션의 interview_state 업데이트
@@ -47,7 +92,7 @@ async function updateInterviewState(sessionId: string, state: InterviewState): P
   const supabase = await createClient()
   await supabase
     .from('sessions')
-    .update({ interview_state: state })
+    .update({ interview_state: JSON.parse(JSON.stringify(state)) })
     .eq('id', sessionId)
 }
 
@@ -56,7 +101,42 @@ export async function POST(request: NextRequest) {
     const body: QuestionRequest = await request.json()
     const { sessionId, subjectName, subjectRelation, messages, isFirst } = body
     
-    // 결제 게이트: paid 상태가 아니면 LLM 호출 차단
+    // 0. 인증 확인
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: '인증이 필요합니다.' },
+        { status: 401 }
+      )
+    }
+    
+    // 1. 세션 소유권 확인 + 질문 카운트 조회
+    // 보안: 404로 통일하여 세션 존재 여부 힌트 최소화
+    const { authorized, questionCount } = await verifySessionAndGetCount(sessionId, user.id)
+    if (!authorized) {
+      return NextResponse.json(
+        { error: '세션을 찾을 수 없습니다.' },
+        { status: 404 }
+      )
+    }
+    
+    // 2. 무료 질문 제한 체크 (결제 안 한 세션만)
+    const isPaid = await isPaidSession(sessionId)
+    if (!isPaid) {
+      if (questionCount >= FREE_QUESTIONS_LIMIT) {
+        return NextResponse.json({
+          error: 'FREE_LIMIT_EXCEEDED',
+          message: LIMIT_MESSAGES.questions.description,
+          title: LIMIT_MESSAGES.questions.title,
+          cta: LIMIT_MESSAGES.questions.cta,
+          current_count: questionCount,
+          limit: FREE_QUESTIONS_LIMIT,
+        }, { status: 402 }) // 402 Payment Required
+      }
+    }
+    
+    // 3. 결제 게이트: paid 상태가 아니면 LLM 호출 차단 (기존 로직 - 로컬에서는 우회됨)
     const paymentGate = await requirePayment(sessionId)
     if (!paymentGate.allowed) {
       return paymentGate.response
@@ -113,9 +193,15 @@ ${interviewOSHint}
 
     // 첫 질문인 경우
     if (isFirst) {
-      const firstQuestionPrompt = `${subjectName}님(${subjectRelation})의 이야기를 처음 시작하는 따뜻한 첫 질문을 해주세요. 
-너무 무겁지 않게, 어린 시절이나 성장 배경에 대한 편안한 질문으로 시작해주세요.
-질문만 출력하세요.`
+      const firstQuestionPrompt = `${subjectName}님(${subjectRelation})의 이야기를 처음 시작합니다.
+
+먼저 따뜻한 인사로 시작하고, 이어서 첫 질문을 해주세요.
+- 인사는 "${subjectName}님"을 부르며 편안하게 시작하세요
+- 예시: "안녕하세요, ${subjectName}님! 오늘 함께 이야기 나눌 수 있어서 정말 기뻐요. 천천히 편하게 말씀해 주세요."
+- 인사 후 한 줄 띄우고, 어린 시절이나 성장 배경에 대한 편안한 첫 질문을 해주세요
+- 너무 무겁지 않게 시작해주세요
+
+인사와 질문을 함께 출력하세요.`
 
       const response = await openai.chat.completions.create({
         model: 'gpt-4o',

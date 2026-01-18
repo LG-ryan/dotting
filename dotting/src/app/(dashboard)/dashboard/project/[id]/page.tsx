@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createBrowserClient } from '@supabase/ssr'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -9,7 +10,11 @@ import { Card } from '@/components/ui/card'
 import { StoryPreviewModal } from '@/components/story-preview-modal'
 import { OrderStatusCard } from '@/components/payment/OrderStatusBadge'
 import { PaymentModal } from '@/components/payment/PaymentModal'
+import { FreeLimitCelebrationModal } from '@/components/payment/FreeLimitCelebrationModal'
+import { PaymentConfirmedModal } from '@/components/payment/PaymentConfirmedModal'
+import { ArchiveDownloadButton } from '@/components/archive/ArchiveDownloadButton'
 import type { OrderPaymentStatus } from '@/types/database'
+import { FREE_QUESTIONS_LIMIT, LIMIT_MESSAGES, PAID_ORDER_STATUSES } from '@/lib/free-tier-limits'
 
 interface MessageMeta {
   question_source?: 'llm' | 'fallback'
@@ -91,9 +96,19 @@ export default function ProjectPage() {
   
   // 결제/주문 관련 상태
   const [orderStatus, setOrderStatus] = useState<OrderPaymentStatus | null>(null)
+  const [orderId, setOrderId] = useState<string | null>(null)
+  const [orderPackage, setOrderPackage] = useState<string | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   
+  // 무료 티어 제한 상태
+  const [freeQuestionsUsed, setFreeQuestionsUsed] = useState(0)
+  const [freeLimitReached, setFreeLimitReached] = useState(false)
+  const [isPaidSession, setIsPaidSession] = useState(false)
+  const [showCelebrationModal, setShowCelebrationModal] = useState(false)
+  const [showPaymentConfirmedModal, setShowPaymentConfirmedModal] = useState(false)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [isPageVisible, setIsPageVisible] = useState(true)
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -161,7 +176,7 @@ export default function ProjectPage() {
     // 활성 주문 정보 로드
     const { data: orderData } = await supabase
       .from('orders')
-      .select('status')
+      .select('id, status, package')
       .eq('session_id', sessionId)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
@@ -169,7 +184,19 @@ export default function ProjectPage() {
       .single()
     
     if (orderData) {
+      setOrderId(orderData.id)
+      setOrderPackage(orderData.package)
       setOrderStatus(orderData.status as OrderPaymentStatus)
+      // 결제 완료 상태 확인 (단일 소스 상수 사용)
+      setIsPaidSession(PAID_ORDER_STATUSES.includes(orderData.status as typeof PAID_ORDER_STATUSES[number]))
+      
+      // 페이지 로드 시 결제 완료 상태면 셀레브레이션 모달 표시 (한 번만)
+      if (orderData.status === 'paid') {
+        const hasSeenCelebration = localStorage.getItem(`celebration_${orderData.id}`)
+        if (!hasSeenCelebration) {
+          setShowPaymentConfirmedModal(true)
+        }
+      }
     }
 
     // 메시지 로드
@@ -182,6 +209,11 @@ export default function ProjectPage() {
 
     if (messagesData) {
       setMessages(messagesData)
+      
+      // 사용자 답변 수 계산 (무료 제한 체크용) - 사용자 입장에서 직관적
+      const userMessageCount = messagesData.filter(m => m.role === 'user').length
+      setFreeQuestionsUsed(userMessageCount)
+      setFreeLimitReached(userMessageCount >= FREE_QUESTIONS_LIMIT)
     }
 
     // 메시지가 없으면 첫 질문 생성
@@ -192,10 +224,81 @@ export default function ProjectPage() {
     setLoading(false)
   }
 
+  // 페이지 가시성 감지
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden)
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
+  // 결제 확인 실시간 구독 + 폴링 (Supabase Realtime)
+  useEffect(() => {
+    if (orderStatus !== 'pending_payment' || !orderId || !isPageVisible) return
+
+    // 1. Realtime 구독 (즉시 알림)
+    const channel = supabase
+      .channel(`order_${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          const newStatus = payload.new.status
+          if (newStatus === 'paid') {
+            setOrderStatus('paid')
+            setOrderPackage(payload.new.package)
+            
+            // localStorage 확인: 이미 본 모달인지 체크
+            const hasSeenCelebration = localStorage.getItem(`celebration_${orderId}`)
+            if (!hasSeenCelebration) {
+              setShowPaymentConfirmedModal(true)
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    // 2. Fallback 폴링 (30초 간격, Realtime이 실패할 경우 대비)
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('status, package')
+        .eq('id', orderId)
+        .single()
+
+      if (data?.status === 'paid') {
+        setOrderStatus('paid')
+        setOrderPackage(data.package)
+        
+        // localStorage 확인: 이미 본 모달인지 체크
+        const hasSeenCelebration = localStorage.getItem(`celebration_${orderId}`)
+        if (!hasSeenCelebration) {
+          setShowPaymentConfirmedModal(true)
+        }
+      }
+    }, 30000) // 30초
+
+    return () => {
+      channel.unsubscribe()
+      clearInterval(interval)
+    }
+  }, [orderStatus, orderId, isPageVisible, supabase])
+
   const generateFirstQuestion = async (sessionData: Session | null) => {
     if (!sessionData) return
 
     setGenerating(true)
+
+    // 고정 인사 + 첫 질문 (LLM 없이도 항상 표시)
+    const defaultGreeting = `안녕하세요, ${sessionData.subject_name}님! 오늘 함께 이야기 나눌 수 있어서 정말 기뻐요. 천천히 편하게 말씀해 주세요.
+
+${sessionData.subject_name}님은 어린 시절 어디서 자라셨나요? 그때의 동네 풍경이나 분위기가 기억나시면 들려주세요.`
 
     try {
       const response = await fetch('/api/ai/question', {
@@ -211,41 +314,66 @@ export default function ProjectPage() {
       })
 
       const data = await response.json()
+      
+      // LLM 질문이 있으면 사용, 없으면 고정 인사 사용
+      const questionContent = data.question || defaultGreeting
+      const isFallback = !data.question || data.is_fallback
 
-      if (data.question) {
-        // meta 정보 구성
-        const meta: MessageMeta = {
-          question_source: data.is_fallback ? 'fallback' : 'llm',
-        }
-        if (data.is_fallback && data.error_message) {
-          meta.fallback_reason = data.error_message
-        }
+      // meta 정보 구성
+      const meta: MessageMeta = {
+        question_source: isFallback ? 'fallback' : 'llm',
+      }
+      if (isFallback) {
+        meta.fallback_reason = data.error_message || '기본 인사 사용'
+      }
+      
+      // DB에 도팅 질문 저장 (meta 포함)
+      const { data: newMessage } = await supabase
+        .from('messages')
+        .insert({
+          session_id: sessionId,
+          role: 'ai',
+          content: questionContent,
+          input_type: 'text',
+          order_index: 0,
+          meta,
+        })
+        .select()
+        .single()
+
+      if (newMessage) {
+        setMessages([newMessage])
         
-        // DB에 AI 질문 저장 (meta 포함)
-        const { data: newMessage } = await supabase
-          .from('messages')
-          .insert({
-            session_id: sessionId,
-            role: 'ai',
-            content: data.question,
-            input_type: 'text',
-            order_index: 0,
-            meta,
-          })
-          .select()
-          .single()
-
-        if (newMessage) {
-          setMessages([newMessage])
-          
-          if (data.is_fallback) {
-            setConsecutiveFallbacks(1)
-          }
+        if (isFallback) {
+          setConsecutiveFallbacks(1)
         }
       }
     } catch (error) {
       console.error('Failed to generate first question:', error)
-      setQuestionFailed(true)
+      
+      // API 실패해도 고정 인사로 표시
+      const meta: MessageMeta = {
+        question_source: 'fallback',
+        fallback_reason: 'API 호출 실패',
+      }
+      
+      const { data: newMessage } = await supabase
+        .from('messages')
+        .insert({
+          session_id: sessionId,
+          role: 'ai',
+          content: defaultGreeting,
+          input_type: 'text',
+          order_index: 0,
+          meta,
+        })
+        .select()
+        .single()
+
+      if (newMessage) {
+        setMessages([newMessage])
+        setConsecutiveFallbacks(1)
+      }
     }
 
     setGenerating(false)
@@ -275,9 +403,11 @@ export default function ProjectPage() {
 
     if (savedUserMessage) {
       setMessages(prev => [...prev, savedUserMessage])
+      // 답변 수 즉시 업데이트 (UX: 바로 반영)
+      setFreeQuestionsUsed(prev => prev + 1)
     }
 
-    // AI 후속 질문 생성
+    // 도팅 후속 질문 생성
     await generateNextQuestion([...messages, { 
       id: savedUserMessage?.id || '', 
       role: 'user', 
@@ -290,7 +420,7 @@ export default function ProjectPage() {
     setSending(false)
   }
 
-  // AI 질문 생성 (재시도 가능)
+  // 도팅 질문 생성 (재시도 가능)
   const generateNextQuestion = async (currentMessages: Message[]) => {
     setGenerating(true)
     setQuestionFailed(false)
@@ -310,6 +440,15 @@ export default function ProjectPage() {
 
       const data = await response.json()
 
+      // 무료 제한 초과 처리 - 축하 모달 띄우기
+      if (response.status === 402 && data.error === 'FREE_LIMIT_EXCEEDED') {
+        setFreeLimitReached(true)
+        setFreeQuestionsUsed(data.current_count)
+        setShowCelebrationModal(true) // 자연스러운 축하 모달!
+        setGenerating(false)
+        return
+      }
+
       if (data.question) {
         // meta 정보 구성
         const meta: MessageMeta = {
@@ -319,7 +458,7 @@ export default function ProjectPage() {
           meta.fallback_reason = data.error_message
         }
         
-        // AI 질문 저장 (meta 포함)
+        // 도팅 질문 저장 (meta 포함)
         const { data: savedAiMessage } = await supabase
           .from('messages')
           .insert({
@@ -361,7 +500,7 @@ export default function ProjectPage() {
     
     setRetryingQuestion(true)
     
-    // 마지막 AI 메시지가 fallback이면 삭제하고 재생성
+    // 마지막 도팅 메시지가 fallback이면 삭제하고 재생성
     const lastMessage = messages[messages.length - 1]
     if (lastMessage?.role === 'ai') {
       // DB에서 삭제
@@ -439,7 +578,7 @@ export default function ProjectPage() {
     setEditingMessageId(null)
     setEditText('')
     
-    // 이후 AI 질문이 있으면 재생성 선택 모달 표시
+    // 이후 도팅 질문이 있으면 재생성 선택 모달 표시
     const messageIndex = messages.findIndex(m => m.id === editingMessageId)
     const hasFollowingAiMessage = messages.slice(messageIndex + 1).some(m => m.role === 'ai')
     
@@ -459,7 +598,7 @@ export default function ProjectPage() {
     
     const { messageIndex, newContent, originalMessages } = pendingEditData
     
-    // 이후 AI 메시지 삭제하고 재생성
+    // 이후 도팅 메시지 삭제하고 재생성
     const messagesUntilEdit = originalMessages.slice(0, messageIndex + 1)
     messagesUntilEdit[messagesUntilEdit.length - 1] = { 
       ...messagesUntilEdit[messagesUntilEdit.length - 1], 
@@ -678,8 +817,13 @@ export default function ProjectPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-slate-600">로딩 중...</div>
+      <div className="flex flex-col items-center justify-center h-96">
+        <div className="dotting-dots dotting-dots--loading dotting-dots--lg mb-4">
+          <span className="dotting-dot" />
+          <span className="dotting-dot" />
+          <span className="dotting-dot" />
+        </div>
+        <p className="text-[var(--dotting-muted-gray)]">이야기를 불러오고 있어요</p>
       </div>
     )
   }
@@ -690,38 +834,62 @@ export default function ProjectPage() {
   return (
     <div className="max-w-3xl mx-auto">
       {/* 헤더 */}
-      <div className="mb-6 flex justify-between items-start">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">
-            {session?.subject_name}님의 이야기
-          </h1>
-          <p className="text-slate-600 text-sm mt-1">
-            {session?.subject_relation} · {userAnswerCount}개의 답변
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleCreateShareLink}
-          disabled={shareLoading}
-          className="text-amber-700 border-amber-200 hover:bg-amber-50"
+      <div className="mb-6">
+        {/* 뒤로가기 버튼 */}
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="mb-4 text-[13px] text-[var(--dotting-muted-gray)] hover:text-[var(--dotting-deep-navy)] transition-colors"
         >
-          {shareLoading ? '생성 중...' : '링크 공유'}
-        </Button>
+          ← 프로젝트 목록으로
+        </button>
+        
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-[24px] leading-[1.35] font-bold text-[var(--dotting-deep-navy)]">
+              {session?.subject_name}님의 이야기
+            </h1>
+            <p className="text-[var(--dotting-muted-gray)] text-[13px] mt-1">
+              {session?.subject_relation} · {userAnswerCount}개의 답변
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCreateShareLink}
+            disabled={shareLoading}
+            className="text-[var(--dotting-warm-amber)] border-[var(--dotting-warm-amber)]/20 hover:bg-[var(--dotting-warm-amber)]/5"
+          >
+            {shareLoading ? '생성 중...' : '링크 공유'}
+          </Button>
+        </div>
       </div>
       
       {/* 결제/주문 상태 카드 */}
       {orderStatus && ['pending_payment', 'paid', 'in_production', 'ready_to_ship', 'shipped', 'delivered'].includes(orderStatus) && (
-        <div className="mb-6">
+        <div className="mb-6" data-order-status-card>
           <OrderStatusCard status={orderStatus} />
-          {orderStatus === 'pending_payment' && (
-            <Button
-              onClick={() => setShowPaymentModal(true)}
-              className="mt-3 w-full bg-[var(--dotting-deep-navy)] hover:bg-[#2A4A6F]"
-            >
-              결제 안내 보기
-            </Button>
-          )}
+          
+          {/* 중앙 액션 영역 */}
+          <div className="mt-4 space-y-3">
+            {orderStatus === 'pending_payment' && (
+              <Button
+                onClick={() => setShowPaymentModal(true)}
+                size="default"
+                className="w-full bg-[var(--dotting-deep-navy)] hover:bg-[#2A4A6F]"
+              >
+                결제 안내 보기
+              </Button>
+            )}
+            
+            {/* 유산 상자 다운로드 (Heritage 패키지, 편집 완료 시) */}
+            {orderId && orderPackage === 'premium' && orderStatus === 'paid' && session && (
+              <ArchiveDownloadButton
+                orderId={orderId}
+                sessionId={session.id}
+                subjectName={session.subject_name}
+              />
+            )}
+          </div>
         </div>
       )}
       
@@ -739,10 +907,89 @@ export default function ProjectPage() {
         />
       )}
 
+      {/* 진행률 표시 (결제 전에만) */}
+      {!isPaidSession && !freeLimitReached && (
+        <div className="mb-6 p-4 bg-white rounded-xl border border-[var(--dotting-border)]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-[var(--dotting-deep-navy)]">
+              이야기 수집 중
+            </span>
+            <span className="text-sm text-[var(--dotting-muted-gray)]">
+              {freeQuestionsUsed} / {FREE_QUESTIONS_LIMIT}
+            </span>
+          </div>
+          
+          {/* 진행률 바 */}
+          <div className="dotting-progress-track mb-2">
+            <div 
+              className="dotting-progress-fill"
+              style={{ width: `${(freeQuestionsUsed / FREE_QUESTIONS_LIMIT) * 100}%` }}
+            />
+          </div>
+          
+          {/* 안내 메시지 */}
+          <p className="text-xs text-[var(--dotting-muted-gray)]">
+            {freeQuestionsUsed >= FREE_QUESTIONS_LIMIT - 3 
+              ? `${FREE_QUESTIONS_LIMIT - freeQuestionsUsed}개만 더 답변하면 책으로 완성할 수 있어요!`
+              : freeQuestionsUsed >= 3
+              ? '좋은 이야기가 쌓이고 있어요'
+              : '천천히 이야기를 들려주세요'
+            }
+          </p>
+        </div>
+      )}
+
+      {/* 무료 제한 초과 안내 - 조용한 럭셔리 스타일 */}
+      {freeLimitReached && !isPaidSession && (
+        <Card className="mb-6 p-6 bg-white border-[var(--dotting-warm-amber)]/30">
+          <div className="text-center">
+            {/* ●●● 완성 시그니처 */}
+            <div className="flex justify-center gap-1.5 mb-4">
+              <span className="w-2 h-2 rounded-full bg-[var(--dotting-warm-amber)]" />
+              <span className="w-2 h-2 rounded-full bg-[var(--dotting-warm-amber)]" />
+              <span className="w-2 h-2 rounded-full bg-[var(--dotting-warm-amber)]" />
+            </div>
+            <h3 className="text-lg font-bold text-[var(--dotting-deep-navy)] mb-2">
+              {freeQuestionsUsed}개의 이야기가 모였어요
+            </h3>
+            <p className="text-[var(--dotting-muted-gray)] mb-5">
+              책으로 완성할 준비가 됐어요
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button
+                variant="secondary"
+                onClick={() => setShowPreviewModal(true)}
+              >
+                미리보기
+              </Button>
+              <Button
+                onClick={() => setShowCelebrationModal(true)}
+              >
+                책으로 완성하기
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* 채팅 영역 */}
       <Card className="h-[500px] flex flex-col">
         {/* 메시지 목록 */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* 질문 생성 중 표시 */}
+          {generating && messages.length === 0 && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <span className="dotting-dots dotting-dots--loading dotting-dots--lg flex justify-center mb-4">
+                  <span className="dotting-dot" />
+                  <span className="dotting-dot" />
+                  <span className="dotting-dot" />
+                </span>
+                <p className="text-[var(--dotting-muted-gray)]">첫 질문을 준비하고 있어요</p>
+              </div>
+            </div>
+          )}
+          
           {messages.map((message, index) => {
             const isLastUserMessage = message.role === 'user' && 
               message.id === messages.filter(m => m.role === 'user').slice(-1)[0]?.id
@@ -754,7 +1001,7 @@ export default function ProjectPage() {
                 key={message.id}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className="flex flex-col items-end max-w-[80%]">
+                <div className={`flex flex-col max-w-[80%] ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
                   {isEditing ? (
                     // 수정 모드
                     <div className="w-full">
@@ -785,14 +1032,27 @@ export default function ProjectPage() {
                       <div
                         className={`p-4 rounded-2xl ${
                           message.role === 'user'
-                            ? 'bg-[var(--dotting-deep-navy)] text-white rounded-br-md'
+                            ? 'bg-[var(--dotting-warm-gold)] text-[var(--dotting-deep-navy)] rounded-br-md font-medium'
                             : message.meta?.question_source === 'fallback'
-                            ? 'bg-amber-50 text-[var(--dotting-deep-navy)] rounded-bl-md border border-amber-200'
+                            ? 'bg-[var(--dotting-soft-cream)] text-[var(--dotting-deep-navy)] rounded-bl-md border border-amber-200'
                             : 'bg-[var(--dotting-soft-cream)] text-[var(--dotting-deep-navy)] rounded-bl-md border border-[var(--dotting-border)]'
                         }`}
                       >
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                       </div>
+                      
+                      {/* 마지막 도팅 질문 아래: 답변 가이드 힌트 */}
+                      {isLastAiMessage && !generating && (
+                        <div className="mt-3 p-3 bg-[#FEFCF8] rounded-lg border border-[#F0EBE0] max-w-full">
+                          <p className="text-xs text-[#8B7355] font-medium mb-1.5">이런 내용을 떠올려보세요</p>
+                          <div className="text-xs text-[#A89880] space-y-1">
+                            <p>• <span className="text-[#8B7355]">장소와 풍경</span> — 그때 어디에 있었나요?</p>
+                            <p>• <span className="text-[#8B7355]">함께한 사람</span> — 누구와 함께였나요?</p>
+                            <p>• <span className="text-[#8B7355]">감정과 느낌</span> — 어떤 기분이었나요?</p>
+                            <p>• <span className="text-[#8B7355]">오감의 기억</span> — 소리, 냄새, 맛이 기억나시나요?</p>
+                          </div>
+                        </div>
+                      )}
                       
                       {/* 마지막 사용자 메시지: 수정 버튼 */}
                       {isLastUserMessage && !generating && (
@@ -804,7 +1064,7 @@ export default function ProjectPage() {
                         </button>
                       )}
                       
-                      {/* 마지막 AI 메시지가 fallback이면: 다른 질문 받기 버튼 */}
+                      {/* 마지막 도팅 메시지가 fallback이면: 다른 질문 받기 버튼 */}
                       {isLastAiMessage && message.meta?.question_source === 'fallback' && !generating && (
                         <button
                           onClick={handleRetryQuestion}
@@ -814,7 +1074,14 @@ export default function ProjectPage() {
                           {consecutiveFallbacks >= 3 ? (
                             <span className="text-amber-500">잠시 후 다시 시도해주세요</span>
                           ) : retryingQuestion ? (
-                            <span>다시 만드는 중...</span>
+                            <span className="flex items-center gap-1">
+                              다시 만드는 중
+                              <span className="dotting-dots dotting-dots--loading dotting-dots--sm inline-flex">
+                                <span className="dotting-dot" />
+                                <span className="dotting-dot" />
+                                <span className="dotting-dot" />
+                              </span>
+                            </span>
                           ) : (
                             <>
                               <span>↻</span>
@@ -833,7 +1100,14 @@ export default function ProjectPage() {
           {generating && (
             <div className="flex justify-start">
               <div className="bg-[var(--dotting-soft-cream)] text-[var(--dotting-deep-navy)] p-4 rounded-2xl rounded-bl-md border border-[var(--dotting-border)]">
-                <p className="text-sm">질문을 생각하고 있어요 ●●●</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">질문을 생각하고 있어요</span>
+                  <span className="dotting-dots dotting-dots--loading dotting-dots--sm">
+                    <span className="dotting-dot" />
+                    <span className="dotting-dot" />
+                    <span className="dotting-dot" />
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -853,7 +1127,16 @@ export default function ProjectPage() {
                   className="text-sm text-[var(--dotting-warm-brown)] hover:text-[var(--dotting-deep-navy)] flex items-center gap-1"
                 >
                   <span>↻</span>
-                  {retryingQuestion ? '다시 만드는 중...' : '다른 질문 받기'}
+                  {retryingQuestion ? (
+                    <span className="flex items-center gap-1">
+                      다시 만드는 중
+                      <span className="dotting-dots dotting-dots--loading dotting-dots--sm inline-flex">
+                        <span className="dotting-dot" />
+                        <span className="dotting-dot" />
+                        <span className="dotting-dot" />
+                      </span>
+                    </span>
+                  ) : '다른 질문 받기'}
                 </button>
               )}
             </div>
@@ -864,26 +1147,42 @@ export default function ProjectPage() {
 
         {/* 입력 영역 */}
         <div className="border-t border-[var(--dotting-border)] p-4">
-          <div className="flex space-x-3">
-            <Textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="답변을 입력하세요..."
-              className="flex-1 min-h-[60px] max-h-[120px] resize-none"
-              disabled={sending || generating}
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!inputText.trim() || sending || generating}
-              className="h-[60px] px-6"
-            >
-              전송
-            </Button>
-          </div>
-          <p className="text-xs text-[var(--dotting-muted-text)] mt-2">
-            Enter로 전송, Shift+Enter로 줄바꿈
-          </p>
+          {freeLimitReached && !isPaidSession ? (
+            // 무료 제한 초과 시 - 조용한 럭셔리 스타일
+            <div className="text-center py-4">
+              <p className="text-[var(--dotting-muted-gray)] text-sm mb-3">
+                이야기가 충분히 모였어요. 이제 책으로 완성해보세요.
+              </p>
+              <Button
+                onClick={() => setShowCelebrationModal(true)}
+              >
+                책으로 완성하기
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex space-x-3">
+                <Textarea
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="답변을 입력하세요..."
+                  className="flex-1 min-h-[60px] max-h-[120px] resize-none"
+                  disabled={sending || generating}
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!inputText.trim() || sending || generating}
+                  size="default"
+                >
+                  전송
+                </Button>
+              </div>
+              <p className="text-xs text-[var(--dotting-muted-text)] mt-2">
+                Enter로 전송, Shift+Enter로 줄바꿈
+              </p>
+            </>
+          )}
         </div>
       </Card>
 
@@ -901,6 +1200,7 @@ export default function ProjectPage() {
         <Button
           disabled={!canGenerateStory}
           onClick={handleStartPreview}
+          size="default"
         >
           {hasExistingPreview ? '이야기 이어서 보기' : '이야기 정리하기'}
         </Button>
@@ -949,6 +1249,17 @@ export default function ProjectPage() {
         </div>
       )}
       
+      {/* 결제 확인 모달 */}
+      {showPaymentConfirmedModal && session && orderId && orderPackage && (
+        <PaymentConfirmedModal
+          isOpen={showPaymentConfirmedModal}
+          onClose={() => setShowPaymentConfirmedModal(false)}
+          packageType={orderPackage as 'pdf_only' | 'standard' | 'premium'}
+          subjectName={session.subject_name}
+          orderId={orderId}
+        />
+      )}
+
       {/* 공유 링크 모달 */}
       {showShareModal && shareUrl && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -989,6 +1300,20 @@ export default function ProjectPage() {
             </p>
           </Card>
         </div>
+      )}
+
+      {/* 무료 제한 도달 축하 모달 */}
+      {session && (
+        <FreeLimitCelebrationModal
+          isOpen={showCelebrationModal}
+          onClose={() => setShowCelebrationModal(false)}
+          onProceedToPayment={() => {
+            setShowCelebrationModal(false)
+            setShowPaymentModal(true)
+          }}
+          subjectName={session.subject_name}
+          questionCount={freeQuestionsUsed}
+        />
       )}
     </div>
   )

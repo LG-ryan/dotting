@@ -58,12 +58,16 @@ interface CompilationData {
 
 interface PdfPreviewProps {
   compilationId: string
+  sessionId?: string
+  packageType?: string
   onBack?: () => void
   onPrintConfirm?: () => void
 }
 
 export default function PdfPreview({
   compilationId,
+  sessionId,
+  packageType,
   onBack,
   onPrintConfirm
 }: PdfPreviewProps) {
@@ -126,6 +130,14 @@ export default function PdfPreview({
       }
       
       setIsConfirmed(true)
+      
+      // Heritage 패키지의 경우 dedication 페이지로 리다이렉트
+      if (packageType === 'premium' && sessionId) {
+        // 1초 후 리다이렉트 (사용자가 확인 완료를 인지할 시간)
+        setTimeout(() => {
+          window.location.href = `/dashboard/project/${sessionId}/dedication`
+        }, 1000)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '오류가 발생했습니다.')
     } finally {

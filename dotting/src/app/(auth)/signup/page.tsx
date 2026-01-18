@@ -78,18 +78,27 @@ export default function SignupPage() {
   if (success) {
     return (
       <Card className="border-0 shadow-xl bg-white">
-        <CardHeader className="space-y-1 text-center">
+        <CardHeader className="space-y-4 text-center">
+          <div className="w-16 h-16 bg-[var(--dotting-warm-gold)]/20 rounded-full flex items-center justify-center mx-auto">
+            <svg className="w-8 h-8 text-[var(--dotting-warm-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
           <CardTitle className="text-2xl font-bold tracking-tight text-[var(--dotting-deep-navy)]">이메일을 확인하세요</CardTitle>
           <CardDescription className="text-[var(--dotting-muted-text)]">
-            {email}로 인증 메일을 보냈습니다.
-            <br />
-            메일의 링크를 클릭하여 가입을 완료해주세요.
+            <strong className="text-[var(--dotting-deep-navy)]">{email}</strong>로<br />
+            인증 메일을 보냈습니다.
+            <br /><br />
+            <span className="text-sm">
+              📧 메일함을 확인하고 인증 링크를 클릭하면<br />
+              회원가입이 완료됩니다.
+            </span>
           </CardDescription>
         </CardHeader>
         <CardFooter>
           <Link href="/login" className="w-full">
             <Button variant="outline" className="w-full h-11 border-[var(--dotting-warm-gold)] text-[var(--dotting-deep-navy)] hover:bg-[var(--dotting-warm-gold)]/10">
-              로그인 페이지로 돌아가기
+              서재 입구로 돌아가기
             </Button>
           </Link>
         </CardFooter>
@@ -174,17 +183,18 @@ export default function SignupPage() {
           </p>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button 
-            type="submit" 
-            className="w-full h-11 bg-[var(--dotting-warm-gold)] hover:bg-[#C49660] text-[var(--dotting-deep-navy)] font-semibold"
+          <Button
+            type="submit"
+            size="default"
+            className="w-full bg-[var(--dotting-warm-gold)] hover:bg-[#C49660] text-[var(--dotting-deep-navy)] font-semibold"
             disabled={loading}
           >
-            {loading ? '가입 중...' : '회원가입'}
+            {loading ? '준비 중...' : '새 책 꺼내기'}
           </Button>
           <p className="text-sm text-center text-[var(--dotting-muted-text)]">
-            이미 계정이 있으신가요?{' '}
+            이미 서재가 있으신가요?{' '}
             <Link href="/login" className="font-medium text-[var(--dotting-deep-navy)] hover:underline">
-              로그인
+              서재 들어가기
             </Link>
           </p>
         </CardFooter>

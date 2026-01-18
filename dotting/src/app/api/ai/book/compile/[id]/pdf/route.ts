@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { ReviewStatus, ParagraphType } from '@/types/database'
+import { requirePayment } from '@/lib/payment-gate'
 
 interface PdfParagraph {
   id: string
@@ -46,6 +47,7 @@ export async function GET(
       .from('compilations')
       .select(`
         id,
+        session_id,
         status,
         review_status,
         pdf_snapshot_version,
@@ -65,6 +67,7 @@ export async function GET(
     
     const compData = compilation as unknown as {
       id: string
+      session_id: string
       status: string
       review_status: ReviewStatus
       pdf_snapshot_version: number | null
@@ -79,6 +82,12 @@ export async function GET(
         { error: '이 컴파일에 대한 권한이 없습니다.' },
         { status: 403 }
       )
+    }
+    
+    // 결제 게이트: PDF는 유료 기능
+    const paymentGate = await requirePayment(compData.session_id)
+    if (!paymentGate.allowed) {
+      return paymentGate.response
     }
     
     // PDF 생성 가능 상태 확인

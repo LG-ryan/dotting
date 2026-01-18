@@ -63,20 +63,79 @@ export function StoryPreviewModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <Card 
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto relative"
+        style={{
+          backgroundColor: '#FFFCF7',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06), 0 16px 48px rgba(0, 0, 0, 0.08)',
+        }}
+      >
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-pulse">
-              <div className="w-16 h-16 bg-[var(--dotting-warm-gold)]/30 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-2xl">●●●</span>
-              </div>
-              <p className="text-[var(--dotting-deep-navy)]">이야기를 다듬고 있어요...</p>
-              <p className="text-sm text-[var(--dotting-muted-text)] mt-2">잠시만 기다려주세요</p>
+          <div className="p-16 text-center">
+            {/* 점이 채워지는 애니메이션 - 이야기가 완성되는 느낌 */}
+            <div className="flex justify-center gap-3 mb-12">
+              {[0, 1, 2].map((index) => (
+                <span
+                  key={index}
+                  className="w-[6px] h-[6px] rounded-full"
+                  style={{
+                    backgroundColor: '#1A365D',
+                    animation: `dotFill 2s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.4}s infinite`,
+                  }}
+                />
+              ))}
             </div>
+            
+            <p 
+              className="text-center mb-3"
+              style={{
+                fontFamily: "'Noto Serif KR', Batang, Georgia, serif",
+                fontSize: '20px',
+                fontWeight: 600,
+                color: '#1A365D',
+                wordBreak: 'keep-all',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              이야기를 엮고 있어요
+            </p>
+            
+            <p 
+              className="text-center"
+              style={{
+                fontSize: '15px',
+                fontWeight: 300,
+                color: '#6B7280',
+                letterSpacing: '0.02em',
+              }}
+            >
+              한 장 한 장 정성스럽게
+            </p>
+
+            {/* 점이 채워지는 애니메이션 - 잉크가 스며드는 느낌 */}
+            <style jsx>{`
+              @keyframes dotFill {
+                0% {
+                  opacity: 0.2;
+                  transform: scale(0.6);
+                  box-shadow: 0 0 0 0 rgba(26, 54, 93, 0);
+                }
+                50% {
+                  opacity: 1;
+                  transform: scale(1);
+                  box-shadow: 0 0 0 4px rgba(26, 54, 93, 0.1);
+                }
+                100% {
+                  opacity: 0.2;
+                  transform: scale(0.6);
+                  box-shadow: 0 0 0 0 rgba(26, 54, 93, 0);
+                }
+              }
+            `}</style>
           </div>
         ) : chapter ? (
-          <div className="p-6">
+          <div className="p-12">
             {/* Stale 경고 */}
             {showStaleWarning && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
@@ -111,9 +170,13 @@ export function StoryPreviewModal({
             {/* 헤더 */}
             <div className="text-center mb-6">
               <p className="text-sm text-[var(--dotting-muted-text)] mb-1">미리보기</p>
-              <h2 className="text-xl font-bold text-[var(--dotting-deep-navy)]">
-                이런 느낌으로 정리해드릴게요
+              <h2 className="text-xl font-bold text-[var(--dotting-deep-navy)] mb-2">
+                도팅 편집실에서 갈무리한 첫 번째 기록입니다
               </h2>
+              {/* 데이터 밀도 가시화 */}
+              <p className="text-sm text-[var(--dotting-muted-gray)] leading-relaxed">
+                소중한 기억의 점들을 연결하여 정리했습니다
+              </p>
             </div>
 
             {/* 챕터 미리보기 */}
@@ -248,7 +311,7 @@ export function StoryPreviewModal({
                   disabled={remainingAttempts <= 0}
                   className="min-w-[120px]"
                 >
-                  다른 느낌으로
+                  다시 정리하기
                 </Button>
                 <Button
                   onClick={handleConfirm}

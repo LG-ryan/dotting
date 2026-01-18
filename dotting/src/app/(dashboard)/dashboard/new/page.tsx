@@ -35,6 +35,9 @@ export default function NewProjectPage() {
       return
     }
 
+    // 디버깅 로그
+    console.log('[DOTTING New] Creating session for user:', user.id)
+
     const { data, error } = await supabase
       .from('sessions')
       .insert({
@@ -46,6 +49,8 @@ export default function NewProjectPage() {
       })
       .select()
       .single()
+
+    console.log('[DOTTING New] Session created:', data?.id, 'error:', error)
 
     if (error) {
       setError(error.message)
@@ -180,15 +185,15 @@ export default function NewProjectPage() {
           <Button
             type="button"
             variant="outline"
+            size="default"
             onClick={() => router.back()}
-            className="h-11 px-6"
           >
             취소
           </Button>
           <Button
             type="submit"
+            size="default"
             disabled={loading || !subjectName || !subjectRelation}
-            className="h-11 px-6 bg-slate-900 hover:bg-slate-800"
           >
             {loading ? '생성 중...' : '프로젝트 시작'}
           </Button>
